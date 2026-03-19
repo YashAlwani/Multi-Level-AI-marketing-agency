@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketing Agent — TikTok Ad Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; justify-content: center; padding: 3rem 1rem; }
+    .card { background: #1a1a1a; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 520px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+    h1 { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .sub { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+    label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 0.4rem; margin-top: 1.2rem; }
+    input[type="file"], textarea, select {
+      width: 100%; background: #111; border: 1px solid #333; border-radius: 8px;
+      color: #f0f0f0; padding: 0.7rem 0.9rem; font-size: 0.95rem;
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    input[type="file"] { padding: 0.5rem; cursor: pointer; }
+    button {
+      margin-top: 1.8rem; width: 100%; background: #fe2c55; color: #fff;
+      border: none; border-radius: 8px; padding: 0.85rem; font-size: 1rem;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: #e0244a; }
+    .hint { font-size: 0.78rem; color: #666; margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>TikTok Ad Generator</h1>
+    <p class="sub">Upload a product image, describe it, and get two ad variants in seconds.</p>
+
+    <form action="/generate" method="post" enctype="multipart/form-data">
+      <label for="image">Product image</label>
+      <input type="file" id="image" name="image" accept="image/*" required />
+      <p class="hint">PNG, JPG, WEBP — max 16 MB</p>
+
+      <label for="description">Short description (15–40 words)</label>
+      <textarea id="description" name="description" required
+        placeholder="e.g. Eco-friendly bamboo water bottle with double-wall insulation. Keeps drinks cold 24h, hot 12h. Perfect for gym, hiking, and daily commute."></textarea>
+
+      <label for="tone">Ad tone</label>
+      <select id="tone" name="tone">
+        <option value="energetic">Energetic</option>
+        <option value="playful">Playful</option>
+        <option value="professional">Professional</option>
+        <option value="emotional">Emotional</option>
+        <option value="urgent">Urgent</option>
+      </select>
+
+      <button type="submit">Generate Ads</button>
+    </form>
+  </div>
+</body>
+</html>

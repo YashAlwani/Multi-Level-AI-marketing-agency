@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketing Agent — Results</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; padding: 2rem 1rem; }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.3rem; }
+    .sub { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+    a.back { color: #fe2c55; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 1.5rem; }
+    a.back:hover { text-decoration: underline; }
+    section { background: #1a1a1a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    h2 { font-size: 1rem; font-weight: 700; color: #fe2c55; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    h3 { font-size: 0.9rem; color: #ccc; margin-bottom: 0.5rem; margin-top: 1rem; }
+    .pill { display: inline-block; background: #2a2a2a; border-radius: 20px; padding: 0.25rem 0.7rem; font-size: 0.8rem; margin: 0.2rem; }
+    .swatch { display: inline-block; width: 24px; height: 24px; border-radius: 50%; margin: 0.2rem; vertical-align: middle; border: 1px solid #444; }
+    .ad-card { background: #111; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 3px solid #fe2c55; }
+    .ad-text { font-size: 1rem; line-height: 1.5; }
+    .char-count { font-size: 0.75rem; color: #666; margin-top: 0.4rem; }
+    .flag { background: #2a1a00; border: 1px solid #7a4000; border-radius: 6px; padding: 0.5rem 0.8rem; font-size: 0.82rem; margin-top: 0.5rem; color: #ffaa44; }
+    .no-flags { color: #4caf50; font-size: 0.85rem; }
+    .score-badge { display: inline-block; background: #fe2c55; color: #fff; border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.8rem; font-weight: 700; margin-left: 0.5rem; }
+    .score-low { background: #b00020; }
+    .score-mid { background: #e65000; }
+    .score-high { background: #2e7d32; }
+    .cta-card { background: #111; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+    .cta-original { color: #aaa; font-size: 0.85rem; }
+    .cta-suggestion { color: #69f0ae; font-size: 0.9rem; font-weight: 600; margin-top: 0.4rem; }
+    .cta-reasoning { color: #777; font-size: 0.8rem; margin-top: 0.3rem; font-style: italic; }
+    .persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .persona-item label { font-size: 0.75rem; color: #777; display: block; margin-bottom: 0.2rem; }
+    .persona-item .value { font-size: 0.95rem; }
+    pre { background: #111; border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.78rem; color: #aaa; line-height: 1.6; }
+    textarea.summary { width: 100%; background: #111; border: 1px solid #333; border-radius: 8px; color: #f0f0f0; padding: 0.8rem; font-size: 0.85rem; min-height: 100px; resize: vertical; }
+    .product-img { max-width: 200px; border-radius: 8px; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">&larr; Generate another</a>
+    <h1>Ad Generation Results</h1>
+    <p class="sub">Tone: <strong>{{ output.meta.tone }}</strong> &mdash; &ldquo;{{ output.meta.description }}&rdquo;</p>
+
+    {% if image_filename %}
+    <img src="/static/uploads/{{ image_filename }}" alt="Product image" class="product-img" />
+    {% endif %}
+
+    <!-- ===== AUDIENCE PERSONA ===== -->
+    <section>
+      <h2>Audience Persona</h2>
+      <div class="persona-grid">
+        <div class="persona-item">
+          <label>Persona</label>
+          <div class="value"><strong>{{ output.audience.persona_label }}</strong></div>
+        </div>
+        <div class="persona-item">
+          <label>Age Range</label>
+          <div class="value">{{ output.audience.age_range }}</div>
+        </div>
+        <div class="persona-item" style="grid-column: span 2;">
+          <label>Interests</label>
+          <div class="value">
+            {% for interest in output.audience.interests %}
+              <span class="pill">{{ interest }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="persona-item" style="grid-column: span 2;">
+          <label>Platform Behavior</label>
+          <div class="value" style="color:#aaa; font-size:0.88rem;">{{ output.audience.platform_behavior }}</div>
+        </div>
+      </div>
+      {% if output.audience.error is defined %}
+        <p style="color:#e65000; font-size:0.8rem; margin-top:0.5rem;">Fallback used: {{ output.audience.error }}</p>
+      {% endif %}
+    </section>
+
+    <!-- ===== VISION TAGS ===== -->
+    <section>
+      <h2>Vision Analysis</h2>
+      <h3>Product type</h3>
+      <span class="pill">{{ output.vision.product_type }}</span>
+      <h3>Visual attributes</h3>
+      {% for attr in output.vision.visual_attributes %}
+        <span class="pill">{{ attr }}</span>
+      {% endfor %}
+      <h3>Mood</h3>
+      <span class="pill">{{ output.vision.mood }}</span>
+      <h3>Hashtags</h3>
+      {% for tag in output.vision.suggested_hashtags %}
+        <span class="pill">{{ tag }}</span>
+      {% endfor %}
+    </section>
+
+    <!-- ===== COLOR PALETTE ===== -->
+    <section>
+      <h2>Color Palette</h2>
+      <span class="swatch" style="background:{{ output.colors.dominant }};" title="{{ output.colors.dominant }}"></span>
+      <strong style="font-size:0.85rem; vertical-align:middle;">{{ output.colors.dominant }}</strong>
+      <br /><br />
+      {% for c in output.colors.palette %}
+        <span class="swatch" style="background:{{ c }};" title="{{ c }}"></span>
+      {% endfor %}
+    </section>
+
+    <!-- ===== AD VARIANTS ===== -->
+    <section>
+      <h2>Ad Variants</h2>
+      {% for key in ["variant_1", "variant_2"] %}
+        <div class="ad-card">
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">{{ key.replace("_", " ").title() }}</div>
+          <div class="ad-text">{{ output.ads[key] }}</div>
+          <div class="char-count">{{ output.ads[key]|length }} characters</div>
+        </div>
+      {% endfor %}
+    </section>
+
+    <!-- ===== CTA ANALYSIS ===== -->
+    <section>
+      <h2>CTA Analysis</h2>
+      {% for key in ["variant_1", "variant_2"] %}
+        {% set v = output.cta_analysis[key] %}
+        {% set score = v.score %}
+        <div class="cta-card">
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.5rem;">
+            {{ key.replace("_", " ").title() }}
+            {% if score >= 8 %}
+              <span class="score-badge score-high">{{ score }}/10</span>
+            {% elif score >= 5 %}
+              <span class="score-badge score-mid">{{ score }}/10</span>
+            {% else %}
+              <span class="score-badge score-low">{{ score }}/10</span>
+            {% endif %}
+          </div>
+          <div class="cta-original">Original CTA: &ldquo;{{ v.original_cta }}&rdquo;</div>
+          <div class="cta-suggestion">Suggested: &ldquo;{{ v.suggestion }}&rdquo;</div>
+          <div class="cta-reasoning">{{ v.reasoning }}</div>
+        </div>
+      {% endfor %}
+    </section>
+
+    <!-- ===== COMPLIANCE FLAGS ===== -->
+    <section>
+      <h2>Compliance Flags</h2>
+      {% if output.compliance_flags %}
+        {% for flag in output.compliance_flags %}
+          <div class="flag">
+            <strong>{{ flag.variant.replace("_", " ").title() }}</strong> &mdash;
+            matched &ldquo;{{ flag.matched }}&rdquo;: {{ flag.reason }}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="no-flags">No compliance issues detected.</p>
+      {% endif %}
+    </section>
+
+    <!-- ===== RAW JSON ===== -->
+    <section>
+      <h2>Raw JSON Output</h2>
+      <pre>{{ output | tojson(indent=2) }}</pre>
+    </section>
+
+    <!-- ===== SUMMARY ===== -->
+    <section>
+      <h2>Campaign Summary Notes</h2>
+      <textarea class="summary" placeholder="Add your campaign notes here..."></textarea>
+    </section>
+
+  </div>
+</body>
+</html>
