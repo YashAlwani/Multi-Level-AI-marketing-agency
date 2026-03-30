@@ -3,16 +3,18 @@ import json
 from config import OLLAMA_URL, OLLAMA_MODEL
 
 
-def segment(description: str, vision_tags: dict) -> dict:
+def segment(description: str, vision_tags: dict, doc_context: list = None) -> dict:
     """Derive a target audience persona from product description and vision tags."""
     try:
-        tags_summary = ", ".join(vision_tags.get("visual_attributes", []))
-        mood = vision_tags.get("mood", "")
         product_type = vision_tags.get("product_type", "")
+        product_tags = ", ".join(vision_tags.get("product_tags", []))
+        target_signals = ", ".join(vision_tags.get("target_signals", []))
+        mood = vision_tags.get("mood", "")
 
         system_prompt = (
             "You are a marketing audience analyst. "
-            "Given a product description and visual tags, derive a target audience persona. "
+            "Given product tags and buyer signals extracted from a product image, "
+            "derive a precise target audience persona for a TikTok ad campaign. "
             "Respond with ONLY a valid JSON object — no markdown, no explanation. "
             "Required keys: age_range (str), interests (list of 3-5 str), "
             "platform_behavior (str), persona_label (str, max 40 chars)."
@@ -20,10 +22,16 @@ def segment(description: str, vision_tags: dict) -> dict:
 
         user_prompt = (
             f"Product type: {product_type}\n"
-            f"Visual attributes: {tags_summary}\n"
+            f"Product tags: {product_tags}\n"
+            f"Buyer signals: {target_signals}\n"
             f"Mood: {mood}\n"
             f"Description: {description}"
         )
+
+        if doc_context:
+            context_block = "\n\n---\nRelevant brand/product knowledge:\n"
+            context_block += "\n\n".join(f"[{i+1}] {chunk}" for i, chunk in enumerate(doc_context))
+            user_prompt += context_block
 
         payload = {
             "model": OLLAMA_MODEL,

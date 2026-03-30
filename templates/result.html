@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marketing Agent — Results</title>
+  <title>Marketing Agent — Campaign Report</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; padding: 2rem 1rem; }
@@ -41,8 +41,11 @@
 <body>
   <div class="container">
     <a href="/" class="back">&larr; Generate another</a>
-    <h1>Ad Generation Results</h1>
+    <h1>Campaign Report</h1>
     <p class="sub">Tone: <strong>{{ output.meta.tone }}</strong> &mdash; &ldquo;{{ output.meta.description }}&rdquo;</p>
+    {% if output.rag_chunks_used is defined and output.rag_chunks_used > 0 %}
+      <p class="sub" style="color:#4caf50;">Knowledge base: {{ output.rag_chunks_used }} chunk(s) retrieved</p>
+    {% endif %}
 
     {% if image_filename %}
     <img src="/static/uploads/{{ image_filename }}" alt="Product image" class="product-img" />
@@ -83,9 +86,13 @@
       <h2>Vision Analysis</h2>
       <h3>Product type</h3>
       <span class="pill">{{ output.vision.product_type }}</span>
-      <h3>Visual attributes</h3>
-      {% for attr in output.vision.visual_attributes %}
-        <span class="pill">{{ attr }}</span>
+      <h3>Product tags</h3>
+      {% for tag in output.vision.product_tags %}
+        <span class="pill">{{ tag }}</span>
+      {% endfor %}
+      <h3>Buyer signals</h3>
+      {% for signal in output.vision.target_signals %}
+        <span class="pill">{{ signal }}</span>
       {% endfor %}
       <h3>Mood</h3>
       <span class="pill">{{ output.vision.mood }}</span>
@@ -108,7 +115,7 @@
 
     <!-- ===== AD VARIANTS ===== -->
     <section>
-      <h2>Ad Variants</h2>
+      <h2>Ad Copy Variants</h2>
       {% for key in ["variant_1", "variant_2"] %}
         <div class="ad-card">
           <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">{{ key.replace("_", " ").title() }}</div>

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marketing Agent — TikTok Ad Generator</title>
+  <title>Marketing Agent — AI-Powered Campaign Studio</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; justify-content: center; padding: 3rem 1rem; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; align-items: center; padding: 3rem 1rem; }
     .card { background: #1a1a1a; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 520px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
     h1 { font-size: 1.6rem; margin-bottom: 0.4rem; }
     .sub { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
@@ -28,8 +28,8 @@
 </head>
 <body>
   <div class="card">
-    <h1>TikTok Ad Generator</h1>
-    <p class="sub">Upload a product image, describe it, and get two ad variants in seconds.</p>
+    <h1>Marketing Agent</h1>
+    <p class="sub">Your AI marketing team. Upload a product, get audience analysis, ad copy, and CTA recommendations — no agency required.</p>
 
     <form action="/generate" method="post" enctype="multipart/form-data">
       <label for="image">Product image</label>
@@ -51,6 +51,22 @@
 
       <button type="submit">Generate Ads</button>
     </form>
+  </div>
+
+  <div class="card" style="margin-top: 1.5rem;">
+    <h1>Knowledge Base</h1>
+    <p class="sub">Upload product docs, brand briefs, or manuals to enrich campaign generation.</p>
+
+    <form action="/ingest-docs" method="post" enctype="multipart/form-data">
+      <label for="docs">Documents (PDF, TXT, MD)</label>
+      <input type="file" id="docs" name="docs" accept=".pdf,.txt,.md" multiple />
+      <p class="hint">Max 10 MB per file. Re-uploading the same file is safe — duplicates are skipped.</p>
+      <button type="submit">Ingest Documents</button>
+    </form>
+
+    <p style="margin-top: 1rem; font-size: 0.85rem;">
+      <a href="/docs" style="color: #fe2c55; text-decoration: none;">View indexed documents &rarr;</a>
+    </p>
   </div>
 </body>
 </html>

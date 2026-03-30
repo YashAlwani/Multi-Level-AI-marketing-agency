@@ -2,3 +2,5 @@ flask
 pillow
 colorthief
 requests
+chromadb
+pypdf

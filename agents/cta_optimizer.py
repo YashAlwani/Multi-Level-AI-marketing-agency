@@ -11,7 +11,7 @@ def _extract_cta(text: str) -> str:
     return sentences[-1] if sentences else text.strip()
 
 
-def optimize(copy: dict, tone: str, audience_data: dict) -> dict:
+def optimize(copy: dict, tone: str, audience_data: dict, doc_context: list = None) -> dict:
     """Score each variant's CTA and suggest a stronger alternative."""
     try:
         persona_label = audience_data.get("persona_label", "General audience")
@@ -31,6 +31,11 @@ def optimize(copy: dict, tone: str, audience_data: dict) -> dict:
             f"Variant 1: {copy.get('variant_1', '')}\n"
             f"Variant 2: {copy.get('variant_2', '')}"
         )
+
+        if doc_context:
+            context_block = "\n\nBrand context (consider when scoring CTAs):\n"
+            context_block += "\n\n".join(f"[{i+1}] {chunk}" for i, chunk in enumerate(doc_context))
+            user_prompt += context_block
 
         payload = {
             "model": OLLAMA_MODEL,
@@ -53,7 +58,22 @@ def optimize(copy: dict, tone: str, audience_data: dict) -> dict:
             content = content.split("```")[1]
             if content.startswith("json"):
                 content = content[4:]
-        return json.loads(content.strip())
+        parsed = json.loads(content.strip())
+
+        # Normalize keys — models sometimes use "Variant 1", "variant1", etc.
+        key_map = {}
+        for k in parsed:
+            normalized = k.lower().replace(" ", "_")
+            if "1" in normalized:
+                key_map["variant_1"] = parsed[k]
+            elif "2" in normalized:
+                key_map["variant_2"] = parsed[k]
+
+        if "variant_1" in parsed and "variant_2" in parsed:
+            return parsed
+        if key_map:
+            return key_map
+        raise ValueError(f"Unexpected CTA response keys: {list(parsed.keys())}")
 
     except Exception as e:
         return {

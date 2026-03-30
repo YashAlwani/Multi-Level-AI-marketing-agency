@@ -4,7 +4,7 @@ from config import OLLAMA_URL, OLLAMA_MODEL
 
 
 def generate(description: str, vision_data: dict, color_data: dict,
-             tone: str, audience_data: dict) -> dict:
+             tone: str, audience_data: dict, doc_context: list = None) -> dict:
     """Generate two TikTok ad copy variants using Ollama."""
     try:
         persona_label = audience_data.get("persona_label", "General audience")
@@ -20,7 +20,7 @@ def generate(description: str, vision_data: dict, color_data: dict,
             "Required keys: variant_1 (str), variant_2 (str)."
         )
 
-        attrs = ", ".join(vision_data.get("visual_attributes", []))
+        attrs = ", ".join(vision_data.get("product_tags", []))
         hashtags = " ".join(vision_data.get("suggested_hashtags", []))
         user_prompt = (
             f"Product description: {description}\n"
@@ -30,6 +30,11 @@ def generate(description: str, vision_data: dict, color_data: dict,
             f"Tone: {tone}\n"
             f"Suggested hashtags: {hashtags}"
         )
+
+        if doc_context:
+            context_block = "\n\nBrand/product reference material (use as creative context):\n"
+            context_block += "\n\n".join(f"[{i+1}] {chunk}" for i, chunk in enumerate(doc_context))
+            user_prompt += context_block
 
         payload = {
             "model": OLLAMA_MODEL,
