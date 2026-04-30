@@ -6,3 +6,6 @@ __pycache__/
 .env
 CLAUDE.md
 .claude/
+static
+Example
+chroma_store

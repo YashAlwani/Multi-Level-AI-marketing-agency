@@ -5,7 +5,8 @@ OPENROUTER_API_KEY = "your-openrouter-api-key-here"
 OPENROUTER_MODEL = "nvidia/nemotron-nano-12b-v2-vl:free"
 OPENROUTER_FALLBACK_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free"
 OLLAMA_URL = "http://localhost:11434"
-OLLAMA_MODEL = "mistral:7b"
+OLLAMA_MODEL         = "gemma4:e2b"   # creative tasks: copywriter only
+OLLAMA_FAST_MODEL    = "mistral:7b"   # structured JSON tasks: audience, CTA, assistant
 UPLOAD_FOLDER = "static/uploads"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
 

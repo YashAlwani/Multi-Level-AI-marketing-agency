@@ -6,11 +6,28 @@
   <title>Marketing Agent — Campaign Report</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; padding: 2rem 1rem; }
-    .container { max-width: 860px; margin: 0 auto; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #f0f0f0; padding: 1.5rem 1rem; }
+
+    /* ── Two-column layout ── */
+    .page-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.5rem;
+      max-width: 1260px;
+      margin: 0 auto;
+      align-items: start;
+    }
+    .left-col { min-width: 0; }
+
+    @media (max-width: 920px) {
+      .page-layout { grid-template-columns: 1fr; }
+      .right-panel { position: static !important; height: auto !important; min-height: 520px; }
+    }
+
+    /* ── Existing left-column styles ── */
     h1 { font-size: 1.5rem; margin-bottom: 0.3rem; }
-    .sub { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
-    a.back { color: #fe2c55; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 1.5rem; }
+    .sub { color: #888; font-size: 0.85rem; margin-bottom: 1rem; }
+    a.back { color: #fe2c55; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 1.2rem; }
     a.back:hover { text-decoration: underline; }
     section { background: #1a1a1a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
     h2 { font-size: 1rem; font-weight: 700; color: #fe2c55; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -36,146 +53,580 @@
     pre { background: #111; border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.78rem; color: #aaa; line-height: 1.6; }
     textarea.summary { width: 100%; background: #111; border: 1px solid #333; border-radius: 8px; color: #f0f0f0; padding: 0.8rem; font-size: 0.85rem; min-height: 100px; resize: vertical; }
     .product-img { max-width: 200px; border-radius: 8px; margin-bottom: 1rem; }
+
+    /* ── Right panel ── */
+    .right-panel {
+      position: sticky;
+      top: 1rem;
+      height: calc(100vh - 2rem);
+      background: #1a1a1a;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+    }
+
+    .rp-header { padding: 1rem 1.2rem 0; flex-shrink: 0; }
+    .badge-assistant {
+      display: inline-block;
+      background: #fe2c55;
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.18rem 0.55rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .rp-title { font-size: 0.95rem; font-weight: 700; color: #f0f0f0; margin-bottom: 0.8rem; }
+    .rp-divider { border: none; border-top: 1px solid #2a2a2a; margin: 0.6rem 0; }
+
+    /* Sliders */
+    .rp-sliders { padding: 0 1.2rem; flex-shrink: 0; }
+    .slider-row { margin-bottom: 0.75rem; }
+    .slider-row-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #aaa;
+      margin-bottom: 0.3rem;
+    }
+    .slider-val { color: #f0f0f0; font-weight: 600; }
+    .slider-endpoints { display: flex; align-items: center; gap: 0.4rem; }
+    .slider-endpoints span { font-size: 0.68rem; color: #555; white-space: nowrap; }
+    .slider-endpoints input[type="range"] {
+      flex: 1;
+      accent-color: #fe2c55;
+      cursor: pointer;
+    }
+
+    /* Chat */
+    .rp-chat-label { padding: 0.2rem 1.2rem 0.4rem; font-size: 0.78rem; color: #aaa; font-weight: 600; flex-shrink: 0; }
+    .rp-chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 0;
+    }
+    .msg-bubble {
+      max-width: 88%;
+      padding: 0.55rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .msg-agent { align-self: flex-start; background: transparent; border: 1px solid #333; color: #d0d0d0; }
+    .msg-user  { align-self: flex-end; background: #2a2a2a; color: #f0f0f0; }
+    .msg-thinking { align-self: flex-start; color: #555; font-style: italic; font-size: 0.78rem; padding: 0.3rem 0; }
+
+    /* Routing */
+    .rp-routing { padding: 0.3rem 1.2rem; flex-shrink: 0; min-height: 1.4rem; }
+    .routing-text { font-size: 0.7rem; color: #fe2c55; font-weight: 600; letter-spacing: 0.02em; }
+
+    /* Input row */
+    .rp-input-row { padding: 0.4rem 1.2rem; display: flex; gap: 0.4rem; flex-shrink: 0; }
+    .rp-input-row textarea {
+      flex: 1;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.83rem;
+      resize: none;
+      font-family: inherit;
+      min-height: 38px;
+      max-height: 80px;
+    }
+    .rp-input-row textarea:focus { outline: none; border-color: #fe2c55; }
+    .btn-send {
+      background: #fe2c55;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 0.85rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      align-self: flex-end;
+      height: 38px;
+    }
+    .btn-send:hover { background: #e0244a; }
+
+    /* Refine button */
+    .btn-refine {
+      margin: 0.4rem 1.2rem 1rem;
+      background: #fe2c55;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      letter-spacing: 0.03em;
+      width: calc(100% - 2.4rem);
+    }
+    .btn-refine:hover { background: #e0244a; }
+    .btn-refine:disabled,
+    .btn-send:disabled { background: #444; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <a href="/" class="back">&larr; Generate another</a>
-    <h1>Campaign Report</h1>
-    <p class="sub">Tone: <strong>{{ output.meta.tone }}</strong> &mdash; &ldquo;{{ output.meta.description }}&rdquo;</p>
-    {% if output.rag_chunks_used is defined and output.rag_chunks_used > 0 %}
-      <p class="sub" style="color:#4caf50;">Knowledge base: {{ output.rag_chunks_used }} chunk(s) retrieved</p>
-    {% endif %}
+  <div class="page-layout">
 
-    {% if image_filename %}
-    <img src="/static/uploads/{{ image_filename }}" alt="Product image" class="product-img" />
-    {% endif %}
-
-    <!-- ===== AUDIENCE PERSONA ===== -->
-    <section>
-      <h2>Audience Persona</h2>
-      <div class="persona-grid">
-        <div class="persona-item">
-          <label>Persona</label>
-          <div class="value"><strong>{{ output.audience.persona_label }}</strong></div>
-        </div>
-        <div class="persona-item">
-          <label>Age Range</label>
-          <div class="value">{{ output.audience.age_range }}</div>
-        </div>
-        <div class="persona-item" style="grid-column: span 2;">
-          <label>Interests</label>
-          <div class="value">
-            {% for interest in output.audience.interests %}
-              <span class="pill">{{ interest }}</span>
-            {% endfor %}
-          </div>
-        </div>
-        <div class="persona-item" style="grid-column: span 2;">
-          <label>Platform Behavior</label>
-          <div class="value" style="color:#aaa; font-size:0.88rem;">{{ output.audience.platform_behavior }}</div>
-        </div>
-      </div>
-      {% if output.audience.error is defined %}
-        <p style="color:#e65000; font-size:0.8rem; margin-top:0.5rem;">Fallback used: {{ output.audience.error }}</p>
+    <!-- ═══════════════════════════ LEFT COLUMN ═══════════════════════════ -->
+    <div class="left-col">
+      <a href="/" class="back">&larr; Generate another</a>
+      <h1>Campaign Report</h1>
+      <p class="sub" id="meta-sub">Tone: <strong>{{ output.meta.tone }}</strong> &mdash; &ldquo;{{ output.meta.description }}&rdquo;</p>
+      {% if output.rag_chunks_used is defined and output.rag_chunks_used > 0 %}
+        <p class="sub" id="rag-note" style="color:#4caf50;">Knowledge base: {{ output.rag_chunks_used }} chunk(s) retrieved</p>
+      {% else %}
+        <p class="sub" id="rag-note" style="color:#4caf50; display:none;"></p>
       {% endif %}
-    </section>
 
-    <!-- ===== VISION TAGS ===== -->
-    <section>
-      <h2>Vision Analysis</h2>
-      <h3>Product type</h3>
-      <span class="pill">{{ output.vision.product_type }}</span>
-      <h3>Product tags</h3>
-      {% for tag in output.vision.product_tags %}
-        <span class="pill">{{ tag }}</span>
-      {% endfor %}
-      <h3>Buyer signals</h3>
-      {% for signal in output.vision.target_signals %}
-        <span class="pill">{{ signal }}</span>
-      {% endfor %}
-      <h3>Mood</h3>
-      <span class="pill">{{ output.vision.mood }}</span>
-      <h3>Hashtags</h3>
-      {% for tag in output.vision.suggested_hashtags %}
-        <span class="pill">{{ tag }}</span>
-      {% endfor %}
-    </section>
+      {% if image_filename %}
+        <img src="/static/uploads/{{ image_filename }}" alt="Product image" class="product-img" />
+      {% endif %}
 
-    <!-- ===== COLOR PALETTE ===== -->
-    <section>
-      <h2>Color Palette</h2>
-      <span class="swatch" style="background:{{ output.colors.dominant }};" title="{{ output.colors.dominant }}"></span>
-      <strong style="font-size:0.85rem; vertical-align:middle;">{{ output.colors.dominant }}</strong>
-      <br /><br />
-      {% for c in output.colors.palette %}
-        <span class="swatch" style="background:{{ c }};" title="{{ c }}"></span>
-      {% endfor %}
-    </section>
-
-    <!-- ===== AD VARIANTS ===== -->
-    <section>
-      <h2>Ad Copy Variants</h2>
-      {% for key in ["variant_1", "variant_2"] %}
-        <div class="ad-card">
-          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">{{ key.replace("_", " ").title() }}</div>
-          <div class="ad-text">{{ output.ads[key] }}</div>
-          <div class="char-count">{{ output.ads[key]|length }} characters</div>
-        </div>
-      {% endfor %}
-    </section>
-
-    <!-- ===== CTA ANALYSIS ===== -->
-    <section>
-      <h2>CTA Analysis</h2>
-      {% for key in ["variant_1", "variant_2"] %}
-        {% set v = output.cta_analysis[key] %}
-        {% set score = v.score %}
-        <div class="cta-card">
-          <div style="font-size:0.78rem; color:#777; margin-bottom:0.5rem;">
-            {{ key.replace("_", " ").title() }}
-            {% if score >= 8 %}
-              <span class="score-badge score-high">{{ score }}/10</span>
-            {% elif score >= 5 %}
-              <span class="score-badge score-mid">{{ score }}/10</span>
-            {% else %}
-              <span class="score-badge score-low">{{ score }}/10</span>
-            {% endif %}
+      <!-- AUDIENCE PERSONA -->
+      <section id="section-audience">
+        <h2>Audience Persona</h2>
+        <div class="persona-grid">
+          <div class="persona-item">
+            <label>Persona</label>
+            <div class="value"><strong data-field="persona_label">{{ output.audience.persona_label }}</strong></div>
           </div>
-          <div class="cta-original">Original CTA: &ldquo;{{ v.original_cta }}&rdquo;</div>
-          <div class="cta-suggestion">Suggested: &ldquo;{{ v.suggestion }}&rdquo;</div>
-          <div class="cta-reasoning">{{ v.reasoning }}</div>
+          <div class="persona-item">
+            <label>Age Range</label>
+            <div class="value" data-field="age_range">{{ output.audience.age_range }}</div>
+          </div>
+          <div class="persona-item" style="grid-column: span 2;">
+            <label>Interests</label>
+            <div class="value" data-field="interests">
+              {% for interest in output.audience.interests %}
+                <span class="pill">{{ interest }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="persona-item" style="grid-column: span 2;">
+            <label>Platform Behavior</label>
+            <div class="value" style="color:#aaa; font-size:0.88rem;" data-field="platform_behavior">{{ output.audience.platform_behavior }}</div>
+          </div>
         </div>
-      {% endfor %}
-    </section>
+        {% if output.audience.error is defined %}
+          <p style="color:#e65000; font-size:0.8rem; margin-top:0.5rem;">Fallback used: {{ output.audience.error }}</p>
+        {% endif %}
+      </section>
 
-    <!-- ===== COMPLIANCE FLAGS ===== -->
-    <section>
-      <h2>Compliance Flags</h2>
-      {% if output.compliance_flags %}
-        {% for flag in output.compliance_flags %}
-          <div class="flag">
-            <strong>{{ flag.variant.replace("_", " ").title() }}</strong> &mdash;
-            matched &ldquo;{{ flag.matched }}&rdquo;: {{ flag.reason }}
+      <!-- VISION ANALYSIS -->
+      <section>
+        <h2>Vision Analysis</h2>
+        <h3>Product type</h3>
+        <span class="pill">{{ output.vision.product_type }}</span>
+        <h3>Product tags</h3>
+        {% for tag in output.vision.product_tags %}
+          <span class="pill">{{ tag }}</span>
+        {% endfor %}
+        <h3>Buyer signals</h3>
+        {% for signal in output.vision.target_signals %}
+          <span class="pill">{{ signal }}</span>
+        {% endfor %}
+        <h3>Mood</h3>
+        <span class="pill">{{ output.vision.mood }}</span>
+        <h3>Hashtags</h3>
+        {% for tag in output.vision.suggested_hashtags %}
+          <span class="pill">{{ tag }}</span>
+        {% endfor %}
+      </section>
+
+      <!-- COLOR PALETTE -->
+      <section>
+        <h2>Color Palette</h2>
+        <span class="swatch" style="background:{{ output.colors.dominant }};" title="{{ output.colors.dominant }}"></span>
+        <strong style="font-size:0.85rem; vertical-align:middle;">{{ output.colors.dominant }}</strong>
+        <br /><br />
+        {% for c in output.colors.palette %}
+          <span class="swatch" style="background:{{ c }};" title="{{ c }}"></span>
+        {% endfor %}
+      </section>
+
+      <!-- AD COPY VARIANTS -->
+      <section id="section-ads">
+        <h2>Ad Copy Variants</h2>
+        <div class="ad-card" id="ad-variant_1">
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 1</div>
+          <div class="ad-text">{{ output.ads.variant_1 }}</div>
+          <div class="char-count">{{ output.ads.variant_1|length }} characters</div>
+        </div>
+        <div class="ad-card" id="ad-variant_2">
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 2</div>
+          <div class="ad-text">{{ output.ads.variant_2 }}</div>
+          <div class="char-count">{{ output.ads.variant_2|length }} characters</div>
+        </div>
+      </section>
+
+      <!-- CTA ANALYSIS -->
+      <section id="section-cta">
+        <h2>CTA Analysis</h2>
+        {% for key in ["variant_1", "variant_2"] %}
+          {% set v = output.cta_analysis[key] %}
+          {% set score = v.score %}
+          <div class="cta-card" id="cta-{{ key }}">
+            <div style="font-size:0.78rem; color:#777; margin-bottom:0.5rem;">
+              {{ key.replace("_", " ").title() }}
+              {% if score >= 8 %}
+                <span class="score-badge score-high">{{ score }}/10</span>
+              {% elif score >= 5 %}
+                <span class="score-badge score-mid">{{ score }}/10</span>
+              {% else %}
+                <span class="score-badge score-low">{{ score }}/10</span>
+              {% endif %}
+            </div>
+            <div class="cta-original">Original CTA: &ldquo;{{ v.original_cta }}&rdquo;</div>
+            <div class="cta-suggestion">Suggested: &ldquo;{{ v.suggestion }}&rdquo;</div>
+            <div class="cta-reasoning">{{ v.reasoning }}</div>
           </div>
         {% endfor %}
-      {% else %}
-        <p class="no-flags">No compliance issues detected.</p>
-      {% endif %}
-    </section>
+      </section>
 
-    <!-- ===== RAW JSON ===== -->
-    <section>
-      <h2>Raw JSON Output</h2>
-      <pre>{{ output | tojson(indent=2) }}</pre>
-    </section>
+      <!-- COMPLIANCE FLAGS -->
+      <section id="section-compliance">
+        <h2>Compliance Flags</h2>
+        <div class="compliance-content">
+          {% if output.compliance_flags %}
+            {% for flag in output.compliance_flags %}
+              <div class="flag">
+                <strong>{{ flag.variant.replace("_", " ").title() }}</strong> &mdash;
+                matched &ldquo;{{ flag.matched }}&rdquo;: {{ flag.reason }}
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="no-flags">No compliance issues detected.</p>
+          {% endif %}
+        </div>
+      </section>
 
-    <!-- ===== SUMMARY ===== -->
-    <section>
-      <h2>Campaign Summary Notes</h2>
-      <textarea class="summary" placeholder="Add your campaign notes here..."></textarea>
-    </section>
+      <!-- RAW JSON -->
+      <section>
+        <h2>Raw JSON Output</h2>
+        <pre id="raw-json-pre">{{ output | tojson(indent=2) }}</pre>
+      </section>
 
-  </div>
+      <!-- SUMMARY NOTES -->
+      <section>
+        <h2>Campaign Summary Notes</h2>
+        <textarea class="summary" placeholder="Add your campaign notes here..."></textarea>
+      </section>
+    </div><!-- end .left-col -->
+
+    <!-- ═══════════════════════════ RIGHT PANEL ═══════════════════════════ -->
+    <div class="right-panel">
+      <div class="rp-header">
+        <span class="badge-assistant">ASSISTANT</span>
+        <h2 class="rp-title" style="text-transform:none; letter-spacing:0; color:#f0f0f0; font-size:0.95rem;">Refine campaign</h2>
+        <hr class="rp-divider" />
+      </div>
+
+      <!-- Sliders -->
+      <div class="rp-sliders">
+        <div class="slider-row">
+          <div class="slider-row-label">
+            <span>Tone</span>
+            <span class="slider-val" id="tone-label">Professional</span>
+          </div>
+          <div class="slider-endpoints">
+            <span>Casual</span>
+            <input type="range" id="slider-tone" min="1" max="5" value="3" />
+            <span>Energetic</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-row-label">
+            <span>Audience age</span>
+            <span class="slider-val" id="age-label">35</span>
+          </div>
+          <div class="slider-endpoints">
+            <span>18</span>
+            <input type="range" id="slider-age" min="18" max="65" value="35" />
+            <span>65</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-row-label">
+            <span>Formality</span>
+            <span class="slider-val" id="formality-label">Balanced</span>
+          </div>
+          <div class="slider-endpoints">
+            <span>Casual</span>
+            <input type="range" id="slider-formality" min="1" max="5" value="3" />
+            <span>Formal</span>
+          </div>
+        </div>
+        <hr class="rp-divider" />
+      </div>
+
+      <div class="rp-chat-label">Chat with assistant</div>
+
+      <!-- Chat area -->
+      <div class="rp-chat" id="chat-area"></div>
+
+      <!-- Routing display -->
+      <div class="rp-routing">
+        <span class="routing-text" id="routing-text">Planner &rarr; Output</span>
+      </div>
+
+      <!-- Input -->
+      <div class="rp-input-row">
+        <textarea id="chat-input" placeholder="Ask the assistant..." rows="1"></textarea>
+        <button class="btn-send" id="send-btn" aria-label="Send">&#8594;</button>
+      </div>
+
+      <!-- Refine button -->
+      <button class="btn-refine" id="refine-btn">Refine Campaign</button>
+    </div><!-- end .right-panel -->
+
+  </div><!-- end .page-layout -->
+
+  <!-- ═══ Embedded state (used by JS for stateless round-trips) ═══ -->
+  <script>
+    let outputState = {{ output | tojson }};
+    const imageFilename = {{ image_filename | tojson }};
+  </script>
+
+  <script>
+    // ── Slider label maps ──────────────────────────────────────────
+    const TONE_LABELS     = {1:'Casual', 2:'Playful', 3:'Professional', 4:'Emotional', 5:'Energetic'};
+    const FORMALITY_LABELS= {1:'Very Casual', 2:'Casual', 3:'Balanced', 4:'Formal', 5:'Very Formal'};
+
+    const sliderTone      = document.getElementById('slider-tone');
+    const sliderAge       = document.getElementById('slider-age');
+    const sliderFormality = document.getElementById('slider-formality');
+    const toneLabel       = document.getElementById('tone-label');
+    const ageLabel        = document.getElementById('age-label');
+    const formalityLabel  = document.getElementById('formality-label');
+
+    sliderTone.addEventListener('input', () => {
+      toneLabel.textContent = TONE_LABELS[sliderTone.value] || sliderTone.value;
+    });
+    sliderAge.addEventListener('input', () => {
+      ageLabel.textContent = sliderAge.value;
+    });
+    sliderFormality.addEventListener('input', () => {
+      formalityLabel.textContent = FORMALITY_LABELS[sliderFormality.value] || sliderFormality.value;
+    });
+
+    // ── Chat history (client-side, capped at last 12 turns) ────────
+    let chatHistory = [];
+
+    function appendMessage(role, text) {
+      const area = document.getElementById('chat-area');
+      const div  = document.createElement('div');
+      div.className = `msg-bubble ${role === 'user' ? 'msg-user' : 'msg-agent'}`;
+      div.innerHTML = text.replace(/\n/g, '<br>');
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+      if (chatHistory.length >= 12) chatHistory.shift();
+      chatHistory.push({ role, content: text });
+    }
+
+    function appendThinking() {
+      const area = document.getElementById('chat-area');
+      const div  = document.createElement('div');
+      div.className = 'msg-thinking';
+      div.id = 'thinking-indicator';
+      div.textContent = 'Thinking\u2026';
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function removeThinking() {
+      const el = document.getElementById('thinking-indicator');
+      if (el) el.remove();
+    }
+
+    function setLoading(on) {
+      document.getElementById('refine-btn').disabled = on;
+      document.getElementById('send-btn').disabled   = on;
+      document.getElementById('chat-input').disabled = on;
+    }
+
+    // ── Proactive suggestion on load ───────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      // Init slider labels
+      toneLabel.textContent      = TONE_LABELS[sliderTone.value];
+      ageLabel.textContent       = sliderAge.value;
+      formalityLabel.textContent = FORMALITY_LABELS[sliderFormality.value];
+
+      // Fire-and-forget suggestion fetch
+      fetch('/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ output: outputState }),
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.message) appendMessage('assistant', data.message);
+      })
+      .catch(() => {}); // silently ignore
+    });
+
+    // ── Keyboard shortcut: Enter sends ────────────────────────────
+    document.getElementById('chat-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        triggerRefine();
+      }
+    });
+    document.getElementById('send-btn').addEventListener('click', triggerRefine);
+    document.getElementById('refine-btn').addEventListener('click', triggerRefine);
+
+    // ── Core refinement call ──────────────────────────────────────
+    async function triggerRefine() {
+      const userMsg = document.getElementById('chat-input').value.trim();
+      if (userMsg) appendMessage('user', userMsg);
+      document.getElementById('chat-input').value = '';
+
+      appendThinking();
+      setLoading(true);
+
+      try {
+        const resp = await fetch('/refine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            output_state: outputState,
+            user_message: userMsg,
+            tone:         parseInt(sliderTone.value),
+            age:          parseInt(sliderAge.value),
+            formality:    parseInt(sliderFormality.value),
+            chat_history: chatHistory.slice(-6),
+          }),
+        });
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        removeThinking();
+
+        // Update routing label
+        const routingEl = document.getElementById('routing-text');
+        if (routingEl) routingEl.textContent = data.routing_label || 'Planner \u2192 Output';
+
+        // Update in-memory state for next round-trip
+        outputState = data.output;
+
+        // Update DOM sections
+        updateDOM(data.output);
+
+        // Assistant reply
+        if (data.assistant_message) appendMessage('assistant', data.assistant_message);
+
+      } catch (err) {
+        removeThinking();
+        appendMessage('assistant', `Refinement failed: ${err.message}. Please try again.`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // ── DOM updaters ──────────────────────────────────────────────
+    function updateDOM(output) {
+      updateMetaHeader(output.meta);
+      updateAudienceSection(output.audience);
+      updateAdsSection(output.ads);
+      updateCTASection(output.cta_analysis);
+      updateComplianceSection(output.compliance_flags);
+      updateRAGNote(output.rag_chunks_used);
+      updateRawJSON(output);
+    }
+
+    function updateMetaHeader(meta) {
+      if (!meta) return;
+      const el = document.getElementById('meta-sub');
+      if (el) el.innerHTML = `Tone: <strong>${meta.tone}</strong> &mdash; &ldquo;${meta.description}&rdquo;`;
+    }
+
+    function updateRAGNote(count) {
+      const el = document.getElementById('rag-note');
+      if (!el) return;
+      if (count > 0) {
+        el.textContent = `Knowledge base: ${count} chunk(s) retrieved`;
+        el.style.display = '';
+      }
+    }
+
+    function updateAudienceSection(audience) {
+      if (!audience) return;
+      const s = document.getElementById('section-audience');
+      if (!s) return;
+      s.querySelector('[data-field="persona_label"]').textContent = audience.persona_label || '';
+      s.querySelector('[data-field="age_range"]').textContent     = audience.age_range || '';
+      const interests = s.querySelector('[data-field="interests"]');
+      interests.innerHTML = (audience.interests || [])
+        .map(i => `<span class="pill">${i}</span>`).join('');
+      s.querySelector('[data-field="platform_behavior"]').textContent = audience.platform_behavior || '';
+    }
+
+    function updateAdsSection(ads) {
+      if (!ads) return;
+      for (const key of ['variant_1', 'variant_2']) {
+        const card = document.getElementById(`ad-${key}`);
+        if (!card) continue;
+        const text = ads[key] || '';
+        card.querySelector('.ad-text').textContent   = text;
+        card.querySelector('.char-count').textContent = `${text.length} characters`;
+      }
+    }
+
+    function updateCTASection(ctaAnalysis) {
+      if (!ctaAnalysis) return;
+      for (const key of ['variant_1', 'variant_2']) {
+        const card = document.getElementById(`cta-${key}`);
+        if (!card) continue;
+        const v     = ctaAnalysis[key] || {};
+        const score = v.score ?? 0;
+        const cls   = score >= 8 ? 'score-high' : score >= 5 ? 'score-mid' : 'score-low';
+        const label = card.querySelector('.score-badge') || card.querySelector('span[class*="score"]');
+        // Re-render the header row to update badge
+        const header = card.querySelector('div[style*="0.78rem"]');
+        if (header) {
+          header.innerHTML = `${key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+            <span class="score-badge ${cls}">${score}/10</span>`;
+        }
+        card.querySelector('.cta-original').innerHTML  = `Original CTA: &ldquo;${v.original_cta || ''}&rdquo;`;
+        card.querySelector('.cta-suggestion').innerHTML= `Suggested: &ldquo;${v.suggestion || ''}&rdquo;`;
+        card.querySelector('.cta-reasoning').textContent = v.reasoning || '';
+      }
+    }
+
+    function updateComplianceSection(flags) {
+      const section = document.getElementById('section-compliance');
+      if (!section) return;
+      const container = section.querySelector('.compliance-content');
+      if (!container) return;
+      if (!flags || flags.length === 0) {
+        container.innerHTML = '<p class="no-flags">No compliance issues detected.</p>';
+      } else {
+        container.innerHTML = flags.map(f =>
+          `<div class="flag"><strong>${(f.variant || '').replace('_', ' ')
+            .replace(/\b\w/g, c => c.toUpperCase())}</strong> &mdash; ` +
+          `matched &ldquo;${f.matched || ''}&rdquo;: ${f.reason || ''}</div>`
+        ).join('');
+      }
+    }
+
+    function updateRawJSON(output) {
+      const pre = document.getElementById('raw-json-pre');
+      if (pre) pre.textContent = JSON.stringify(output, null, 2);
+    }
+  </script>
 </body>
 </html>

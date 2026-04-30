@@ -1,6 +1,6 @@
 import requests
 import json
-from config import OLLAMA_URL, OLLAMA_MODEL
+from config import OLLAMA_URL, OLLAMA_FAST_MODEL as OLLAMA_MODEL
 
 
 def segment(description: str, vision_tags: dict, doc_context: list = None) -> dict:
@@ -45,7 +45,7 @@ def segment(description: str, vision_tags: dict, doc_context: list = None) -> di
         resp = requests.post(
             f"{OLLAMA_URL}/api/chat",
             json=payload,
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         content = resp.json()["message"]["content"].strip()

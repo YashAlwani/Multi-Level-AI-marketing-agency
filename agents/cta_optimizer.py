@@ -1,7 +1,7 @@
 import requests
 import json
 import re
-from config import OLLAMA_URL, OLLAMA_MODEL
+from config import OLLAMA_URL, OLLAMA_FAST_MODEL as OLLAMA_MODEL
 
 
 def _extract_cta(text: str) -> str:
@@ -49,7 +49,7 @@ def optimize(copy: dict, tone: str, audience_data: dict, doc_context: list = Non
         resp = requests.post(
             f"{OLLAMA_URL}/api/chat",
             json=payload,
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         content = resp.json()["message"]["content"].strip()

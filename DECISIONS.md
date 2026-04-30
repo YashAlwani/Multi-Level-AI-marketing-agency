@@ -1146,3 +1146,211 @@ Text documents can be chunked, embedded with a text-specialized model, stored in
 - Embedding a set of brand document chunks completes without errors and produces vectors stored in ChromaDB.
 - Querying with a marketing-related string (e.g., "eco-friendly audience targeting") returns chunks from relevant brand documents, not random text.
 - Embedding speed is fast enough that ingesting a multi-page PDF does not noticeably delay the user experience (target: under 10 seconds for a typical brand guide).
+
+---
+
+## Decision Log Entry 12
+
+### 0. Context: Why does this question exist?
+
+**Project/assignment this belongs to:**
+Marketing Agent POC — adding an interactive refinement layer on top of the base pipeline. The base pipeline (image → persona → copy → CTA → compliance) is a one-shot, stateless process. Users have no way to adjust, iterate, or steer output after the first generation without re-submitting the full form.
+
+**Why this matters right now:**
+A real marketing agency iterates — the first draft is never final. Without a refinement mechanism, the tool produces output but gives the user no way to say "make the copy more playful" or "target a younger audience" without starting over from scratch. Adding an assistant layer bridges the gap between a static report and a working creative tool.
+
+**Where this fits:**
+- New file: `agents/assistant.py` — ReAct orchestrator
+- New routes: `POST /suggest`, `POST /refine` in `app.py`
+- UI: `templates/result.html` — redesigned as two-column layout with sticky refinement panel
+- Figma wireframe defined the UI spec (sliders + chat panel + routing display)
+
+---
+
+### 1. My research question
+How should the refinement loop be architected — as a full pipeline re-run, a stateful multi-agent conversation, or a targeted partial re-run driven by a reasoning step?
+
+---
+
+### 2. Current LO stage
+[ ] Analyzing    [ ] Advising    [x] Designing    [x] Realizing    [ ] Managing
+
+---
+
+### 3. What makes a good decision here?
+
+**My criteria for success:**
+- **C1 — Targeted re-runs:** Refinement should only re-execute the agents affected by the feedback, not the full pipeline. A "make the CTA stronger" request should not re-run audience segmentation.
+- **C2 — Stateless architecture:** No server-side session storage. The full campaign state travels with each request so the Flask app remains stateless.
+- **C3 — Transparent routing:** The UI must show the user which agents are being re-run (e.g. "Planner → Copywriter → CTA → Output") so the system is not a black box.
+- **C4 — Proactive intelligence:** The assistant should suggest improvements automatically after generation, not wait passively for user input.
+
+---
+
+### 4. What I decided
+Implement a single-pass ReAct reasoning step in `agents/assistant.py`. Given the user message + slider values + recent chat history, the assistant calls Ollama once to produce a routing decision (JSON: `agents_to_run`, `reasoning`, `routing_label`). The `/refine` route then executes only the listed agents in pipeline order, using the current output as the base and overwriting only the affected sections.
+
+A separate `/suggest` endpoint fires on page load to generate proactive 2-3 bullet suggestions from the current output.
+
+---
+
+### 5. Why this decision
+
+**Method I used:**
+Designed from the UI wireframe outward — the Figma spec defined three sliders (Tone, Audience age, Formality) and a chat input, which directly maps to two categories of refinement: parameter adjustments (sliders → deterministic remapping) and freeform feedback (chat → LLM routing decision).
+
+**What I found/observed:**
+1. A full multi-step ReAct loop (Thought → Action → Observation → repeat) was unnecessary for a bounded action space of 4 agents. One reasoning pass is sufficient and far more reliable to parse.
+2. The stateless round-trip pattern (send full `output_state` with each `/refine` request) avoids Flask sessions and database storage entirely, consistent with the project's existing stateless architecture.
+3. Slider changes have deterministic routing: age slider always triggers audience + copywriter + cta; tone/formality always triggers copywriter + cta. Only the freeform chat message needs LLM reasoning to route correctly.
+
+**Evidence & artifacts:**
+- `agents/assistant.py` — `get_routing()` with JSON response schema and pipeline-order enforcement
+- `agents/assistant.py` — `suggest()` for proactive analysis
+- `app.py` — `/refine` route with partial agent execution
+- `templates/result.html` — two-column layout, AJAX `triggerRefine()`, DOM updaters per section
+
+**What this means:**
+The ReAct pattern is used for routing intelligence, not for the agents themselves. The LLM decides what to run; deterministic Python code runs it. This keeps the loop fast (one reasoning call) and failures contained (routing fallback defaults to copywriter + guardrails + cta).
+
+**So I decided:**
+Single-pass ReAct routing is the right abstraction. It is interpretable (routing label shown in UI), resilient (JSON parse failure falls back to safe default), and consistent with the pipeline's existing agent pattern. The alternative — a multi-turn ReAct loop — would add latency and parsing complexity for no observable quality gain in a 4-agent action space.
+
+---
+
+### 6. Does this hold up?
+
+**How well this meets my criteria:**
+- C1 — Targeted re-runs: [checkmark] Routing logic enforces pipeline order and only executes listed agents. CTA-only feedback runs 1 agent; audience changes run 4.
+- C2 — Stateless architecture: [checkmark] `output_state` sent with every `/refine` request. No server-side sessions. Chat history maintained client-side (capped at 12 turns).
+- C3 — Transparent routing: [checkmark] `routing_label` returned from `/refine` and displayed live in the UI panel (e.g. "Planner → Audience → Copywriter → CTA → Output").
+- C4 — Proactive intelligence: [checkmark] `/suggest` fires on page load; assistant analyses CTA scores, compliance flags, and audience-copy fit to generate 2-3 actionable bullets.
+
+**Assumptions I'm making:**
+- Ollama can parse the routing JSON reliably enough for the fallback to be rarely needed.
+- Users will find the slider + chat pattern natural for expressing refinement intent.
+- 4 agents is a small enough action space that one reasoning pass is sufficient routing intelligence.
+
+**What surprised me:**
+Embedding the full `output_state` as a JS variable and sending it with each request works cleanly — the JSON is ~2-4 KB per campaign, well within fetch payload limits. The stateless pattern that was originally a simplification is now an architectural advantage: no session management, no expiry, no concurrent session bugs.
+
+---
+
+### 7. What this unlocks
+
+**Implementation evidence:**
+- `agents/assistant.py` — ReAct orchestrator (suggest, get_routing, map_sliders_to_params)
+- `app.py` — /suggest and /refine routes, _build_assistant_reply helper
+- `templates/result.html` — two-column layout with sticky refinement panel
+
+**Next LO stage:**
+Managing — observe whether the routing decisions are accurate in practice and whether users engage with the chat vs. sliders more.
+
+**What I can now do (that I couldn't before):**
+The campaign report is now interactive. Users can steer copy tone, shift the target age group, adjust formality, or ask the assistant to make specific changes — and see only the affected sections update in-place, with the routing decision explained in the UI.
+
+**How I'll know this worked:**
+- `/refine` with "make the CTA more urgent" only re-runs cta_optimizer, not audience or copywriter.
+- Slider-only refinement (no chat message) correctly routes to copywriter + guardrails + cta.
+- The proactive suggestion on page load references specific CTA scores or compliance flags from the actual output, not generic advice.
+
+---
+
+## Decision Log Entry 13
+
+### 0. Context: Why does this question exist?
+
+**Project/assignment this belongs to:**
+Marketing Agent POC — model selection for the expanded pipeline after adding the assistant agent. The pipeline now makes 4 sequential Ollama calls per generation plus 2 additional calls per refinement round (assistant routing + one or more agents). Model speed directly determines whether the tool is usable.
+
+**Why this matters right now:**
+The original model (`gemma4:e4b`, 9.6 GB) was hitting the 60-second timeout on the CTA optimizer. With the assistant agent adding 1-2 more Ollama calls per refinement, using a 9.6 GB model for all tasks would make each refinement round take 3-5 minutes — unacceptable for an interactive loop.
+
+**Where this fits:**
+- `config.py` — `OLLAMA_MODEL` and `OLLAMA_FAST_MODEL`
+- `agents/copywriter.py` — imports `OLLAMA_MODEL`
+- `agents/audience.py`, `agents/cta_optimizer.py`, `agents/assistant.py` — import `OLLAMA_FAST_MODEL`
+
+---
+
+### 1. My research question
+Which Ollama model should handle each pipeline stage, given that the pipeline now has two performance tiers: creative prose generation (copywriter) and structured JSON tasks (audience, CTA, routing)?
+
+---
+
+### 2. Current LO stage
+[ ] Analyzing    [x] Advising    [x] Designing    [ ] Realizing    [ ] Managing
+
+---
+
+### 3. What makes a good decision here?
+
+**My criteria for success:**
+- **C1 — No timeouts:** All agents must respond within 120 seconds on consumer hardware.
+- **C2 — Quality where it matters:** Ad copy quality (copywriter) should benefit from the best available model. Structured JSON tasks (persona derivation, CTA scoring, routing) do not need the same model.
+- **C3 — Already installed:** Prefer models already on disk to avoid additional pull time.
+
+---
+
+### 4. What I decided
+Split into two model tiers using two config constants:
+- `OLLAMA_MODEL = "gemma4:e2b"` — used only by `copywriter.py`
+- `OLLAMA_FAST_MODEL = "mistral:7b"` — used by `audience.py`, `cta_optimizer.py`, `assistant.py`
+
+---
+
+### 5. Why this decision
+
+**Method I used:**
+Analysed per-agent task type to identify where model quality actually affects output visible to the user vs. where it is invisible internal structure.
+
+**What I found/observed:**
+1. `copywriter.py` produces the main deliverable — ad copy variants that users read and judge. This is where prose quality and creativity matter most. `gemma4:e2b` (lighter Gemma 4 model) provides better creative output than mistral:7b for this task.
+2. `audience.py` returns a structured JSON persona (4 fields). `mistral:7b` handles this reliably and the key normalisation pattern is already established.
+3. `cta_optimizer.py` returns structured JSON scores. CTA scoring is pattern-matching against a short text — not a creative task. `mistral:7b` is sufficient.
+4. `assistant.py` routing calls need fast, reliable JSON output. `mistral:7b` is ideal — the routing schema is simple and latency matters for the interactive loop.
+5. `gemma4:e4b` (9.6 GB) caused a 60-second timeout on `cta_optimizer` — confirmed by live error. Assigning it only to the copywriter stage eliminates this entirely.
+
+**Evidence & artifacts:**
+- Live timeout error: `CTA optimizer unavailable: HTTPConnectionPool... Read timed out (read timeout=60)`
+- `config.py` — `OLLAMA_MODEL = "gemma4:e2b"`, `OLLAMA_FAST_MODEL = "mistral:7b"`
+- Timeout increased from 60s → 120s across all agents as a safety margin
+
+**What this means:**
+Model size should match task complexity, not be applied uniformly. Creative generation benefits from a stronger model; structured JSON extraction does not. Routing the heaviest model to the one creative stage and using the faster model for all JSON tasks brings estimated total pipeline time from ~5 minutes to ~90 seconds.
+
+**So I decided:**
+The split model approach is the right architecture for this pipeline's task mix. A single model for all stages was a simplification that made sense for the original POC but becomes a bottleneck once the assistant adds extra Ollama calls to the refinement loop.
+
+---
+
+### 6. Does this hold up?
+
+**How well this meets my criteria:**
+- C1 — No timeouts: [checkmark] `mistral:7b` responds well within 120s for all structured JSON tasks. `gemma4:e2b` (lighter than e4b) is within timeout for copywriting.
+- C2 — Quality where it matters: [checkmark] `gemma4:e2b` handles the one creative stage. All JSON stages use mistral:7b which has proven JSON reliability in this pipeline.
+- C3 — Already installed: [checkmark] `mistral:7b` was already installed. `gemma4:e2b` was pulled as the lighter replacement for `gemma4:e4b`.
+
+**Assumptions I'm making:**
+- `gemma4:e2b` produces noticeably better ad copy than `mistral:7b` for the persona-targeted prompts used in `copywriter.py`. This is assumed but not formally benchmarked.
+- `mistral:7b`'s JSON reliability for routing decisions in `assistant.py` is sufficient — the fallback handles parse failures gracefully.
+
+**What surprised me:**
+The timeout error was the forcing function that exposed a design assumption: that one model for all stages was acceptable. It was fine at 4 agents with mistral:7b (~25s each), but breaks immediately when a slower model is applied uniformly to the same 4+ agent pipeline.
+
+---
+
+### 7. What this unlocks
+
+**Implementation evidence:**
+- `config.py` — two model constants (`OLLAMA_MODEL`, `OLLAMA_FAST_MODEL`)
+- `agents/copywriter.py` — uses `OLLAMA_MODEL`
+- `agents/audience.py`, `agents/cta_optimizer.py`, `agents/assistant.py` — use `OLLAMA_FAST_MODEL`
+
+**Next LO stage:**
+Managing — run the full pipeline with both models and verify no timeouts occur. Monitor whether `gemma4:e2b` copy quality is meaningfully better than `mistral:7b` to validate the split is worth maintaining.
+
+**How I'll know this worked:**
+- Zero timeout errors across 5+ test runs with different product images.
+- Total pipeline time (generation + one refinement round) under 3 minutes on the dev machine.
+- Ad copy variants from `gemma4:e2b` reference the audience persona and tone more specifically than the mistral:7b baseline.

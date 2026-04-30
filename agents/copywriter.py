@@ -48,7 +48,7 @@ def generate(description: str, vision_data: dict, color_data: dict,
         resp = requests.post(
             f"{OLLAMA_URL}/api/chat",
             json=payload,
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         content = resp.json()["message"]["content"].strip()
