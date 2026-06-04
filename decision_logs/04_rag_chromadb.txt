@@ -1,0 +1,110 @@
+DL-04 — RAG layer: ChromaDB and nomic-embed-text
+Marketing Agent POC
+
+
+0. Context
+
+Campaigns were generic when the product had brand guidelines or specs not visible
+in the image. A product manual should be able to influence the copy. Adding a
+RAG layer was the fix — but the stack had to stay local and free.
+
+
+1. Research question
+
+What vector store and embedding model runs locally, integrates cleanly with
+the existing Ollama setup, and actually improves copy specificity?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[x] Advising   — identified the gap: no way to inject brand context into generation
+[x] Designing  — chose ChromaDB + nomic-embed-text against the local/free constraint
+[x] Realizing  — wired rag.py into the pipeline; confirmed retrieval improves output
+[ ] Managing
+
+
+3. What makes a good decision here
+
+- Vector store runs with no external service
+- Embedding model installs with one Ollama pull
+- Re-uploading the same document doesn't create duplicate chunks
+- Copy with RAG context is more specific than without
+
+
+4. What I decided
+
+ChromaDB for the vector store (local file persistence, pip install, built-in
+deduplication). nomic-embed-text via Ollama for embeddings. Text-only — the
+RAG system handles documents, not images. Vision stays separate.
+
+
+5. Why this decision
+
+Method: Library + Lab
+
+Four options against the constraint (local, free, pip-installable):
+FAISS needs manual serialize/load on every restart. Weaviate and cloud options
+need Docker or API keys. ChromaDB persists to chroma_store/ automatically and
+deduplicates by content hash — both things I'd have to build myself with FAISS.
+
+For embeddings: mxbai-embed-large (~3s/chunk) vs nomic-embed-text (~0.8s/chunk).
+Quality is similar on product description retrieval; ingest speed matters more
+during a live demo. nomic wins.
+
+The A/B test on copy output with a product manual uploaded:
+  Without RAG: "Insulated. BPA-free. Shop now."
+  With RAG:    "Insulated with aerospace-grade double-wall vacuum technology.
+                BPA-free Tritan lid. 48h cold retention. Shop the spec sheet."
+
+The specific claims came from the document. The copywriter didn't invent them.
+
+What I'd recommend:
+ChromaDB is genuinely easy for a POC. The deduplication alone saves a lot of
+defensive code. The text-only embedding choice was deliberate — don't mix
+modalities in the vector space unless you have a reason to.
+
+GAP found:
+rag_chunks_used is logged but there's no A/B comparison in the telemetry to
+confirm RAG improves CTA scores across runs. The anecdotal improvement is real;
+the aggregate data isn't collected yet.
+
+
+6. Does this hold up
+
+- No external service:    ✅ ChromaDB + nomic run entirely offline after install
+- Single pull command:    ✅ ollama pull nomic-embed-text
+- No duplicate chunks:    ✅ content-hash IDs; re-uploading same file is safe
+- Copy improves with RAG: ✅ confirmed on 3 product manual tests; specific feature
+                              claims appear in copy when sourced from documents
+
+Assumptions I'm making:
+Documents uploaded are product-relevant. If a user uploads an unrelated PDF,
+the retrieval will inject noise. There's no relevance filter before injection.
+
+What surprised me:
+The chunk size tuning mattered more than the embedding model choice. At 400 chars
+with 80-char overlap, retrieval pulls coherent sentences. Smaller chunks returned
+fragments that broke mid-spec.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing → Realizing (pipeline now handles both image-only and
+image + document inputs)
+
+What I can now do:
+Let users upload brand briefs, product specs, or manuals before generating —
+the pipeline will use them without any extra configuration.
+
+Ongoing monitoring:
+Watch rag_chunks_used in run_log.jsonl. If it's always 0, users aren't
+uploading documents — worth adding a prompt in the UI.
+
+How I'll know this worked:
+Product-specific technical claims appear in copy only when a spec document is
+uploaded. Clean runs without documents produce no invented specifications.
+
+
+*@agents/rag.py · @config.example.py · @app.py*
+*@LO2: Advising · @LO3: Designing · @LO4: Realizing*

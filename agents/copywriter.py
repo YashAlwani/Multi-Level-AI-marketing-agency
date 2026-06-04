@@ -5,16 +5,18 @@ from config import OLLAMA_URL, OLLAMA_MODEL
 
 def generate(description: str, vision_data: dict, color_data: dict,
              tone: str, audience_data: dict, doc_context: list = None) -> dict:
-    """Generate two TikTok ad copy variants using Ollama."""
+    """Generate two distinct ad copy variants using Ollama."""
     try:
         persona_label = audience_data.get("persona_label", "General audience")
         age_range = audience_data.get("age_range", "18–35")
         interests = ", ".join(audience_data.get("interests", []))
 
         system_prompt = (
-            "You are a TikTok ad copywriter. "
+            "You are a social media ad copywriter. "
             f"Target audience: {persona_label} (age {age_range}), interested in {interests}. "
-            "Create two distinct ad copy variants for TikTok. "
+            "Create two distinct ad copy variants. "
+            "Variant 1 must open with an emotional hook (feeling, aspiration, or identity). "
+            "Variant 2 must open with a concrete product benefit or feature. "
             "Each variant must be under 150 characters and include a clear CTA. "
             "Respond with ONLY a valid JSON object — no markdown, no explanation. "
             "Required keys: variant_1 (str), variant_2 (str)."

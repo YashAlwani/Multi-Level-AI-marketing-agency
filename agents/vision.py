@@ -13,7 +13,7 @@ def _build_payload(model: str, image_b64: str, mime: str, description: str) -> d
             {
                 "role": "system",
                 "content": (
-                    "You are a product analyst specializing in consumer goods and TikTok marketing. "
+                    "You are a product analyst specializing in consumer goods and digital marketing. "
                     "Analyze the product in the image and extract structured tags that will be used "
                     "to derive a target audience persona. "
                     "Respond with ONLY a valid JSON object — no markdown, no explanation. "

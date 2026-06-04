@@ -1,0 +1,102 @@
+DL-00 — Scope lock and zero-cost model stack
+Marketing Agent POC
+
+
+0. Context
+
+Before writing any code I needed two things locked: what the pipeline has to
+do (and what it can skip), and what models run it at zero cost. Both decisions
+had to survive a demo on a developer laptop with no API budget.
+
+
+1. Research question
+
+What's the minimum viable pipeline that counts as a "campaign," and what
+model stack runs it for free?
+
+
+2. Current LO stage
+
+[x] Analyzing  — agency research (A1) mapped five functions every agency performs;
+                  requirements spec (A2) added FR1-FR10 with explicit deferral reasoning
+[x] Designing  — locked base pipeline to five agents; picked cloud/local model split
+[ ] Advising
+[ ] Realizing
+[ ] Managing
+
+
+3. What makes a good decision here
+
+- Five-agent baseline covers what an agency does at minimum scale
+- Deferred items don't break the core output
+- Full pipeline runs with no API spend
+
+
+4. What I decided
+
+Build five agents now: vision, audience, copywriter, guardrails, cta_optimizer.
+Defer theme selection, landing page, and evaluation scoring.
+
+Model split: OpenRouter free tier for vision (cloud vision models are fast;
+local alternatives needed 8GB+ VRAM and were too slow). Ollama for all text
+generation — mistral:7b runs at ~20 tokens/s on CPU, zero cost.
+
+
+5. Why this decision
+
+Method: Library + Lab
+
+From A1: even a five-person agency has exactly five distinct functions. Adding
+more before the base five worked would be over-engineering. Compliance (FR7) is
+a required function — not a quality add-on, it's a legal safety requirement —
+so guardrails goes in the base set.
+
+For models, I tested three stacks. All-local failed on vision — LLaVA on CPU
+took 45+ seconds per image. All-cloud accumulated token costs too fast for
+repeated test runs. The split (cloud vision, local text) landed at 60-90s
+total pipeline time at zero cost.
+
+What I'd recommend:
+Lock scope and model stack together before writing agents. Changing the model
+mid-build means rewriting every timeout and prompt format assumption.
+
+GAP found:
+mistral:7b is one model doing everything — copy, audience, routing. I haven't
+validated whether creative tasks and JSON-structured tasks perform equally well
+on the same model. That's worth testing once the pipeline runs.
+
+
+6. Does this hold up
+
+- Five-function baseline:   ✅ vision, audience, copy, compliance, CTA all built
+- Zero cost:                ✅ OpenRouter free tier + Ollama, no billing setup needed
+- Deferred items isolated:  ✅ none of the deferred FRs block the core output
+
+Assumptions I'm making:
+OpenRouter free-tier rate limits are acceptable for test volume. In production
+you'd need a paid account for sustained throughput.
+
+What surprised me:
+Compliance made it into the required set — I initially treated it as a nice-to-have.
+Reading the requirements spec (A2) and the assignment brief made clear it's a legal
+requirement, not polish.
+
+
+7. What this unlocks
+
+Next LO stage: Designing → Realizing (start building agents)
+
+What I can now do:
+Build each of the five agents against a fixed target — no scope drift.
+
+Ongoing monitoring:
+If a deferred feature (theme selection, landing page) is needed to pass a demo,
+revisit scope — don't add it silently.
+
+How I'll know this worked:
+Pipeline runs end-to-end on a product image with no API errors and no timeout
+in under 120 seconds.
+
+
+*@config.example.py · @app.py · @A1_agency_function_research.txt · @A2_requirements_and_scope.txt · @analysis/research_questions.md · @analysis/constraints.md · @analysis/stakeholder_analysis.md*
+*@LO1: Analyzing · @LO3: Designing*

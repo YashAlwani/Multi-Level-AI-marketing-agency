@@ -1,0 +1,113 @@
+DL-03 — Compliance guardrails: regex over LLM-as-judge
+Marketing Agent POC
+
+
+0. Context
+
+The pipeline needs to flag risky claims in ad copy before showing output to the
+user. "Guaranteed results" in a published ad is an FTC violation. The question
+was whether to use an LLM to detect this or a deterministic rule.
+
+
+1. Research question
+
+Should compliance checking use an LLM judge or a rule-based system — and what
+are the consequences of a false negative in each case?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[ ] Advising
+[x] Designing  — tested LLM judge, rejected it; designed regex pattern set
+[x] Realizing  — implemented guardrails.py; wired as mandatory stage after copywriter
+[ ] Managing
+
+
+3. What makes a good decision here
+
+- Zero false negatives on the required claim categories
+- Compliance check never slows the pipeline meaningfully
+- The check is readable by a non-engineer and auditable
+
+
+4. What I decided
+
+Pure Python regex. Seven patterns covering guarantee claims, health claims,
+superlatives, urgency language, scientific claims, weight loss claims, and
+free offers. No LLM call. Always runs after copywriter.
+
+
+5. Why this decision
+
+Method: Lab
+
+I tested an LLM compliance judge (mistral:7b) against five ad copy samples
+with known violations. It caught three of five. Two misses:
+
+  — "Results guaranteed or your money back" → not flagged (model considered
+     the refund offer a mitigating factor)
+  — "Our formula is clinically tested by dermatologists" → not flagged
+     (model judged context acceptable)
+
+Both of those would be FTC violations in real copy. An LLM that decides context
+makes a guarantee claim acceptable is making a legal judgment it's not qualified
+to make. Compliance cannot hallucinate.
+
+Regex matches or it doesn't. "guaranteed" always triggers. Pattern runtime is
+under 1ms. It's also the only agent in the pipeline with no network call —
+which means it can run in tests independently, and it never adds latency.
+
+guardrails.py is the only agent where I hardcoded the logic completely.
+Everything else is prompt-driven. This one is pattern-driven because the
+alternative had a 40% miss rate on a small test set.
+
+What I'd recommend:
+For any binary legal/policy check, use deterministic rules. Reserve LLMs for
+judgment calls where context genuinely matters. "Is 'guaranteed' in this text?"
+is not a judgment call.
+
+GAP found:
+Seven patterns cover known categories. Novel phrasing slips through. "Tested
+in partnership with leading dermatologists" doesn't match the scientific_claim
+pattern. Compliance is necessary but not exhaustive — human review before
+publishing is still required.
+
+
+6. Does this hold up
+
+- Zero false negatives on test set:  ✅ 7/7 patterns detected in validate.py
+- Runtime:                           ✅ <1ms, adds nothing measurable
+- Auditable:                         ✅ each pattern has a plain-English reason string
+
+Assumptions I'm making:
+The seven categories cover the most common violations in product advertising.
+Novel regulatory language or industry-specific claims will need new patterns
+added manually.
+
+What surprised me:
+How often the copywriter generates urgency language ("limited time", "act now")
+without being asked for it. About 40% of runs flag urgency in compliance.
+The copywriter prompt probably needs an explicit instruction to avoid it by default.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing → Realizing (CTA optimizer can now receive clean,
+flagged copy and score it)
+
+What I can now do:
+Run the full copy → compliance → CTA chain. Any risky claim is visible before
+the CTA optimizer scores the variant.
+
+Ongoing monitoring:
+compliance_flags count is logged in run_log.jsonl. If it's consistently high,
+the copywriter prompt needs adjustment — not more compliance patterns.
+
+How I'll know this worked:
+"guaranteed results" in a description triggers a flag on every run.
+Clean copy on standard product descriptions returns an empty flags list.
+
+
+*@agents/guardrails.py · @tests/validate.py · @ADV2_compliance_strategy.txt*
+*@LO3: Designing · @LO4: Realizing*

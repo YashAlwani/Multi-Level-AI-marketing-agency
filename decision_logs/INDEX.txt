@@ -1,0 +1,40 @@
+Marketing Agent POC — Decision Log Index
+==========================================
+Last updated: 2026-06-04
+
+
+READING GUIDE
+─────────────
+10 min:  STORY.md + DL-01 + DL-05
+         → why specialists, why the UI looks the way it does
+30 min:  Add DL-00, DL-03, DL-08
+         → scope, compliance design, ethics
+Full:    A1 → A2 → DL-00 through DL-08 in order
+
+
+ANALYZING EVIDENCE
+──────────────────
+A1   A1_agency_function_research.txt    What agencies do and why they specialize
+A2   A2_requirements_and_scope.txt      FR/BR/US spec with POC scope decisions
+
+
+DECISION LOGS
+─────────────────────────────────────────────────────────────────────────────
+00   00_scope_and_model_stack.txt         Scope locked; cloud/local model split   Analyzing → Designing
+01   01_monolith_to_specialists.txt  ✦    One agent → 5 specialists; output proof  Analyzing → Designing → Realizing
+02   02_vision_agent.txt                  Model fallback + output schema redesign  Realizing → Managing
+03   03_guardrails_pure_python.txt        Regex over LLM judge for compliance      Designing → Realizing
+04   04_rag_chromadb.txt                  ChromaDB + nomic-embed-text RAG layer    Advising → Designing → Realizing
+05   05_refinement_ui_routing.txt         Wireframe → ReAct routing → SSE          Designing → Realizing → Managing
+06   06_model_split.txt                   Timeout → gemma4:e2b copy / mistral JSON  Realizing → Managing
+07   07_pipeline_telemetry.txt            run_log.jsonl + /stats + first findings  Managing
+08   08_ethics.txt                   ✦    Workforce displacement + 3 gaps named    Analyzing → Managing
+
+
+GENERATED ARTIFACTS
+────────────────────
+wireframe.txt               ASCII design spec for result.html (evidence for DL-05)
+scripts/setup.py            Install deps and pull Ollama models
+scripts/health_check.py     Verify Ollama + OpenRouter before demo
+tests/validate.py           Pipeline acceptance tests
+run_log.jsonl               Append-only telemetry (runtime, not in repo)

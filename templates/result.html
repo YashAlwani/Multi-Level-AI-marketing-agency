@@ -262,12 +262,12 @@
       <section id="section-ads">
         <h2>Ad Copy Variants</h2>
         <div class="ad-card" id="ad-variant_1">
-          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 1</div>
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 1 <span style="color:#555;">— emotional hook</span></div>
           <div class="ad-text">{{ output.ads.variant_1 }}</div>
           <div class="char-count">{{ output.ads.variant_1|length }} characters</div>
         </div>
         <div class="ad-card" id="ad-variant_2">
-          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 2</div>
+          <div style="font-size:0.78rem; color:#777; margin-bottom:0.4rem;">Variant 2 <span style="color:#555;">— product benefit</span></div>
           <div class="ad-text">{{ output.ads.variant_2 }}</div>
           <div class="char-count">{{ output.ads.variant_2|length }} characters</div>
         </div>
@@ -325,6 +325,16 @@
         <h2>Campaign Summary Notes</h2>
         <textarea class="summary" placeholder="Add your campaign notes here..."></textarea>
       </section>
+
+      <!-- EXPORT -->
+      <div style="padding-bottom: 2rem;">
+        <button onclick="exportCampaign()" style="background:#1a1a1a; color:#fe2c55; border:1px solid #fe2c55; border-radius:8px; padding:0.7rem 1.4rem; font-size:0.9rem; font-weight:600; cursor:pointer; letter-spacing:0.02em;">
+          ↓ Export Campaign JSON
+        </button>
+        {% if output.pipeline_s is defined %}
+          <span style="font-size:0.78rem; color:#555; margin-left:1rem;">Generated in {{ output.pipeline_s }}s</span>
+        {% endif %}
+      </div>
     </div><!-- end .left-col -->
 
     <!-- ═══════════════════════════ RIGHT PANEL ═══════════════════════════ -->
@@ -626,6 +636,15 @@
     function updateRawJSON(output) {
       const pre = document.getElementById('raw-json-pre');
       if (pre) pre.textContent = JSON.stringify(output, null, 2);
+    }
+
+    function exportCampaign() {
+      const blob = new Blob([JSON.stringify(outputState, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `campaign_${outputState.run_id || 'export'}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
   </script>
 </body>

@@ -1,0 +1,136 @@
+DL-08 — Ethics: what this system does to a shrinking profession
+Marketing Agent POC
+(Required by Project_case.md: "Your decision log must grapple with this reality.")
+
+
+0. Context
+
+This pipeline automates copywriting, audience analysis, and campaign strategy.
+The data on what's happening to these roles is not a projection — it's documented
+in the assignment brief and visible in job posting trends. This DL is the honest
+account.
+
+
+1. Research question
+
+What ethical responsibility exists when building a system that automates the
+work of a profession in measurable decline — and what accountability gaps
+does the system leave open?
+
+
+2. Current LO stage
+
+[x] Analyzing  — read the workforce data in Project_case.md before writing any code
+[ ] Advising
+[ ] Designing
+[ ] Realizing
+[x] Managing   — system works; implications are now real, not hypothetical
+
+
+3. What makes a good decision here
+
+- The facts are stated without softening them
+- The counterargument is included — not a one-sided critique
+- Accountability gaps in the current design are named specifically
+- What the system is and isn't are both clear
+
+
+4. What I decided
+
+Build the system, document the limits, and make those limits visible in the
+output. The pipeline is a starting point, not a finished campaign. The compliance
+check is necessary but not exhaustive. The persona is a hypothesis, not market
+research.
+
+
+5. Why this decision
+
+Method: Field (the data is from documented industry sources, not inference)
+
+The facts: copywriters down 28% YoY for two consecutive years. One Dutch agency
+went from 290 copywriters to 20 after implementing AI. This system automates
+the exact same tasks — copy generation, audience analysis, campaign strategy.
+It costs $0 to run. The barrier to entry for replacing a freelance copywriter
+is an OpenRouter account and a laptop.
+
+The counterargument is real: creative leadership roles are growing. "AI doesn't
+replace creativity — it replaces execution." The senior strategist managing AI
+systems is a growing role. What's being compressed is the execution layer —
+the junior copywriter writing the third iteration of someone else's brief.
+
+The problem with the counterargument: entry-level execution is where most people
+start. The path from junior copywriter to senior creative director goes through
+exactly the work this pipeline now does in 90 seconds. Removing that on-ramp
+narrows the pipeline of future senior talent. That effect isn't captured in current
+job posting data.
+
+Three accountability gaps in this specific design:
+
+  1. No inter-agent critique. vision.py can hallucinate a product tag
+     ("organic" for a non-organic product) → audience.py builds a persona on it
+     → copywriter.py writes "certified organic" copy → guardrails.py doesn't
+     catch it (no pattern for organic claims) → it goes out. No agent reviews
+     another agent's work. Human review is the only check.
+
+  2. Compliance coverage is not exhaustive. Seven patterns catch seven known
+     categories. Novel phrasing slips through. The check is necessary, not
+     sufficient.
+
+  3. Persona bias. nomic-embed-text and mistral:7b reflect training data
+     distributions. "Eco-conscious millennial" from a water bottle image is
+     what the training data most associates with those visual signals — it is not
+     market research. A different demographic might be equally viable. The system
+     defaults without surfacing that it's defaulting.
+
+What I'd recommend:
+Don't describe the output as "ready to publish." Describe it as "a professional
+starting point requiring human review." The language matters — if a user believes
+the compliance check is exhaustive, they won't look for what it misses.
+
+GAP found:
+None of the three accountability gaps above are closed in the current system.
+They are documented here so that anyone using the output knows to apply
+human judgment before anything goes live.
+
+
+6. Does this hold up
+
+- Facts stated accurately:       ✅ workforce data cited from Project_case.md
+- Counterargument included:      ✅ creative leadership growth is real and noted
+- Accountability gaps named:     ✅ three specific gaps with mechanism described
+- System limits visible in UI:   🟡 compliance flags are shown; persona bias and
+                                     inter-agent error propagation are not visible
+                                     to the user at all
+
+Assumptions I'm making:
+The user reads the compliance flags rather than ignoring them. If the UI makes
+it easy to export without reviewing the flags, the system is less safe than
+it appears.
+
+What surprised me:
+Writing this DL after the system worked changed how I read the output. A persona
+label that looked specific during testing ("Eco-Conscious Millennial Athlete")
+looks like a guess once you consider what the model is actually doing —
+pattern-matching against training data distributions, not researching a market.
+
+
+7. What this unlocks
+
+Next LO stage: Managing → ongoing
+
+What I can now do:
+Be honest in any presentation of this system about what it does and doesn't
+provide. The three gaps above are the answer to "what would you fix in v2?"
+
+Ongoing monitoring:
+Watch for moments where the system produces confident-looking output that is
+factually wrong (hallucinated product specs, invented statistics). These are
+the failure modes that matter most in a real deployment.
+
+How I'll know this worked:
+If someone reviewing the portfolio asks "what are the risks?" and the answer
+is already documented here — the DL did its job.
+
+
+*@Project_case.md · @agents/guardrails.py · @agents/audience.py · @agents/assistant.py*
+*@LO1: Analyzing · @LO5: Managing*

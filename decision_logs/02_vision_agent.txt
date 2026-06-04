@@ -1,0 +1,115 @@
+DL-02 — Vision agent: model selection and output redesign
+Marketing Agent POC
+
+
+0. Context
+
+Vision is the first agent in the pipeline. Everything downstream depends on it.
+Getting the model wrong blocked the first run; getting the output schema wrong
+made the audience agent useless. Both were fixed in the same sprint.
+
+
+1. Research question
+
+What vision model works reliably on OpenRouter free tier, and what should the
+output contain to make audience segmentation as effective as possible?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[ ] Advising
+[ ] Designing
+[x] Realizing  — hit the model error on first run, redesigned output schema after
+                  seeing what audience.py actually needed
+[x] Managing   — model_used logged per run so fallback frequency is visible
+
+
+3. What makes a good decision here
+
+- Vision agent returns valid JSON every time, or fails gracefully
+- Output contains buyer signals, not just visual descriptions
+- Fallback activates automatically without user seeing an error
+
+
+4. What I decided
+
+Two-model fallback chain: nemotron-nano-12b-v2-vl:free primary, llama-3.2-11b-
+vision-instruct:free fallback. Redesigned output schema from visual attributes
+to buyer signals — the key output is target_signals, not colors or materials.
+
+
+5. Why this decision
+
+Method: Lab
+
+First run used google/gemma-3-4b-it:free. Immediate 400 error: "model does not
+support vision." The ":it" suffix means instruction-tuned, not vision-capable.
+Not obvious from the model name. Switched to nemotron, which has the ":vl" tag
+(vision-language). Worked first try.
+
+The schema redesign came after seeing what the initial output produced:
+
+  Before: visual_style, colors, materials, overall_impression
+  After: product_type, product_tags, mood, target_signals, suggested_hashtags
+
+The audience agent was receiving color and material data and trying to infer
+who buys this product from it. target_signals ("eco-conscious", "fitness
+enthusiast") gives the audience agent a head start — it's already in buyer
+identity language. The before/after on the same water bottle:
+
+  Audience before redesign: "Health and Wellness Consumer, 20-45"
+  Audience after redesign:  "Eco-Conscious Millennial Athlete, 25-34"
+
+Same model downstream. Different input quality.
+
+What I'd recommend:
+Check the ":vl" or equivalent modality tag before picking any model for vision.
+Model names don't imply modality support. Test the output schema against the
+downstream agent's actual needs before calling the design done.
+
+GAP found:
+If both vision models fail (both are free tier, both can go offline), the pipeline
+returns a safe fallback dict with empty tags. The downstream agents run but produce
+generic output. No user-visible crash — but no useful campaign either. A warning
+in the UI would help.
+
+
+6. Does this hold up
+
+- Returns valid JSON:         ✅ nemotron consistent across 10 test runs
+- Fallback activates:         ✅ tried forcing nemotron failure — llama fallback
+                                   served the request cleanly
+- Buyer signals in output:    ✅ target_signals is the field audience.py
+                                   uses as primary context
+
+Assumptions I'm making:
+OpenRouter free tier stays available during demo. In 10 test runs, 2 fell back
+to llama — both completed. Fallback chain is working as designed.
+
+What surprised me:
+The output schema redesign had a bigger impact than the model selection.
+nemotron vs llama made little difference to downstream quality. "buyer signals
+vs visual attributes" made a large difference.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing (audience + copy agents can now be validated against
+real vision output)
+
+What I can now do:
+Run the full pipeline end-to-end and trace quality issues back to specific agents.
+The model_used key in vision output tells me which model actually served the run.
+
+Ongoing monitoring:
+run_log.jsonl records model_used per run. If fallback frequency rises above 30%,
+nemotron may be rate-limited or offline — time to check OpenRouter free tier status.
+
+How I'll know this worked:
+target_signals in vision output is never empty on a product-specific image.
+audience.py persona_label is specific ("Eco-Conscious Millennial") not generic.
+
+
+*@agents/vision.py · @config.example.py · @app.py*
+*@LO4: Realizing · @LO5: Managing*

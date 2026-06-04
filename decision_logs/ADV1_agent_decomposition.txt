@@ -1,0 +1,122 @@
+ADVISING EVIDENCE — ADV1
+Agent Decomposition Recommendation
+Marketing Agent POC
+
+Date: after A1 and A2 completed, before any agent was written
+Audience: self / anyone picking up the build
+Purpose: translate the agency research into a concrete agent structure
+so the pipeline design is grounded in evidence, not intuition.
+
+
+Recommendation
+--------------
+Build five specialist agents in a fixed linear pipeline. Do NOT build a
+single agent that does everything. Do NOT build parallel agents — the
+pipeline has a strict dependency chain that requires sequential execution.
+
+
+Why this, specifically
+-----------------------
+
+1. Agency research maps directly to five agents
+
+   A1 identified five functions every agency performs at minimum viable scale:
+   product analysis, audience definition, copy generation, CTA optimisation,
+   compliance review. These five functions exist in agencies because they require
+   genuinely different context and judgment — not because of org chart convenience.
+
+   If the research shows agencies specialise for a reason, the agents should
+   reflect that specialisation. The agent structure is not a design choice —
+   it follows from the research.
+
+2. Each agent receives only the context it needs
+
+   The copywriter does not need to see the raw vision JSON. It needs the persona
+   the audience agent derived from it. The CTA optimizer does not need the color
+   palette. Giving each agent a narrow input scope is what makes specialisation
+   different from "different prompts for the same model."
+
+   Monolith failure mode: when one LLM call does product analysis + audience
+   inference + copy generation simultaneously, it defines the audience in terms
+   of who it imagines wanting the copy it's already mentally writing.
+   Specialisation breaks that circular dependency.
+
+3. Dependency chain is strictly sequential
+
+   You cannot write copy before you have a persona. You cannot score CTAs before
+   you have copy. You cannot check compliance before you have copy. The pipeline
+   order is forced by data dependencies:
+
+     vision → color → audience → copywriter → guardrails → cta_optimizer
+
+   Parallel execution would require resolving these dependencies anyway.
+   Linear pipeline is simpler and produces a clearer audit trail.
+
+4. Compliance must be a separate stage, not part of copy generation
+
+   FR7 requires deterministic compliance checking — a fixed list of claim
+   categories that must never slip through. If compliance logic lives in the
+   copywriter prompt ("write copy that avoids guarantee claims"), the model
+   decides when a claim is acceptable. That is a legal judgment call it is
+   not qualified to make. A separate guardrails stage with its own logic
+   (not a prompt) is the only safe design.
+
+
+What to build, concretely
+--------------------------
+
+  agents/vision.py        OpenRouter API call; returns product_type, product_tags,
+                          mood, target_signals, suggested_hashtags, model_used
+                          Target: <100 LoC
+
+  agents/color.py         PIL dominant color extraction; no LLM call
+                          Returns dominant hex + palette list
+                          Target: <40 LoC
+
+  agents/audience.py      Ollama (mistral:7b); receives description + vision output
+                          Returns persona_label, age_range, interests, platform_behavior
+                          Target: <60 LoC
+
+  agents/copywriter.py    Ollama (gemma4:e2b); receives persona + product context
+                          Returns variant_1 (emotional hook) + variant_2 (product benefit)
+                          Target: <70 LoC
+
+  agents/guardrails.py    Pure Python regex; NO LLM call
+                          Returns clean_copy + flags list
+                          Target: <45 LoC
+
+  agents/cta_optimizer.py Ollama (mistral:7b); receives clean copy + persona
+                          Returns per-variant score, suggestion, reasoning
+                          Target: <80 LoC
+
+  app.py                  Flask orchestrator; calls agents in order; renders result.html
+                          Target: <150 LoC (before refinement loop addition)
+
+
+What to watch for during implementation
+-----------------------------------------
+- Vision model must have the ":vl" (vision-language) suffix — ":it" (instruction-tuned)
+  models will return a 400 error. Verify before picking a model name.
+- Ollama model names require the full tag (mistral:7b, not mistral). The model
+  registry is exact-match.
+- The guardrails agent must run even when the copywriter returns an error fallback.
+  Clean copy from a fallback still needs compliance checking.
+- Test each agent independently against a fixed dict before wiring them together.
+  Integration bugs are harder to trace than unit bugs.
+
+
+Risks
+-----
+- OpenRouter free tier models go offline intermittently. Vision must have a
+  fallback model — a single-model vision stage will block the whole pipeline.
+- mistral:7b may time out on long-context copywriting runs (RAG chunks + persona
+  + description). Keep a fallback creative model in mind if this happens.
+- The five-agent pipeline adds ~60-90 seconds total. If any agent hangs rather
+  than timing out cleanly, the Flask request will hang. Set timeouts on every
+  requests.post() call.
+
+
+Status: Implemented — see DL-01 for specialisation proof.
+All six agent files exist. LoC targets were met or close.
+
+@LO2: Advising

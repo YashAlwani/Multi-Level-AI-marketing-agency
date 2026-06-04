@@ -1,0 +1,111 @@
+DL-07 — Pipeline telemetry: run_log.jsonl and first findings
+Marketing Agent POC
+
+
+0. Context
+
+The pipeline was running reliably, but "is it improving?" was unanswerable.
+No data meant relying on intuition for every decision about prompt changes,
+model swaps, or RAG tuning. This DL adds the observation layer.
+
+
+1. Research question
+
+What per-run data is worth capturing to detect quality trends — without logging
+user content or adding pipeline latency?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[ ] Advising
+[ ] Designing
+[ ] Realizing
+[x] Managing   — telemetry live; first findings documented; /stats endpoint serves summary
+
+
+3. What makes a good decision here
+
+- One log line per run, written after the pipeline completes
+- Metrics only — no copy text, no product descriptions
+- /stats endpoint makes findings readable without grepping the file
+
+
+4. What I decided
+
+Append-only JSONL (run_log.jsonl). One line per run: timestamp, run_id,
+model_used (vision), pipeline_s, compliance_flags count, cta_score_avg,
+rag_chunks_used, persona_label. /stats reads it and returns aggregates.
+
+
+5. Why this decision
+
+Method: Lab
+
+JSONL over a database because the volume is tens to hundreds of runs — no
+ORM or migration overhead needed. grep-able, tail-able, importable into any
+analysis tool. Content excluded by design: the log is for metrics, not for
+content. Anyone with file access can read the log; product descriptions and
+copy variants may be brand-sensitive.
+
+The persona_label field acts as a categorical variable. Over time, patterns
+emerge: certain personas may consistently generate higher CTA scores, certain
+product types may consistently trigger compliance flags.
+
+First findings from initial runs:
+  — Primary vision model (nemotron) served 8/10 runs; 2 fell back to llama.
+     Both fallback runs completed. Fallback chain working.
+  — Compliance flags in ~40% of runs, mostly urgency language generated
+     without user request. Copywriter prompt likely needs adjustment.
+  — pipeline_s ranged 70-95s. No timeouts after the model split (DL-06).
+
+What I'd recommend:
+Log metrics, not content. The privacy boundary matters even for a POC — if
+this becomes a portfolio piece, you don't want real product copy sitting in a
+plain text file in the repo.
+
+GAP found:
+No run-by-run comparison of RAG-on vs RAG-off CTA scores. rag_chunks_used is
+logged but the aggregate hasn't been computed. That's the most actionable
+thing the telemetry could confirm.
+
+
+6. Does this hold up
+
+- No latency impact:   ✅ _log_run() writes ~200 bytes after pipeline completes;
+                           not in the critical path
+- No content logged:   ✅ persona_label only (category), not copy text
+- /stats readable:     ✅ returns runs, avg_pipeline_s, avg_cta_score, compliance_rate
+
+Assumptions I'm making:
+run_log.jsonl doesn't need rotation. At a few runs per day, this file stays
+small indefinitely. If volume grows significantly, add a line count check.
+
+What surprised me:
+The 40% compliance flag rate was unexpected. I assumed the copywriter would
+default to clean copy. It defaults to urgency language without being asked —
+"limited time," "act now" appear frequently. The telemetry made this visible;
+without it I would have assumed compliance was working better than it is.
+
+
+7. What this unlocks
+
+Next LO stage: Managing → ongoing
+
+What I can now do:
+Answer "is the pipeline improving?" with data. Any change to prompts, models,
+or RAG parameters has a measurable effect on pipeline_s, cta_score_avg,
+and compliance_rate.
+
+Ongoing monitoring:
+/stats at any time gives the current aggregate. Watch cta_score_avg — if it
+drops after a model change, the new model is worse for copy quality. Watch
+pipeline_s — if it rises, Ollama may be under memory pressure.
+
+How I'll know this worked:
+After adjusting the copywriter prompt to avoid urgency language, compliance_rate
+in /stats drops below 20%. That's the first actionable finding from the telemetry.
+
+
+*@app.py · @run_log.jsonl*
+*@LO5: Managing*
