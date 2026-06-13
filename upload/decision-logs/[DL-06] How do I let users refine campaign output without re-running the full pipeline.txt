@@ -1,0 +1,148 @@
+DL-06 — Refinement UI: Iteration Without Re-Running the Full Pipeline
+Marketing Agent POC
+
+
+0. Context
+
+The first result page was one-shot. Read the output, want a different tone,
+go back, re-upload the image, wait 90 seconds. That is not a workflow — it
+is a reset. The spec had anticipated it: a product manager should be able to
+refine copy by tone and audience age without re-running the full pipeline,
+to iterate quickly in a live meeting (@requirements-scope). The constraints
+added a hard rule: no session state — the full output state travels with
+each /refine request (@constraints).
+
+Refinement is the human-review step the TO-BE picture keeps on purpose: the
+person stays in control of tone, audience, and wording while the agents do
+the work (@gap-to-be · @refinement-loop).
+
+
+1. Research question
+
+How do you let a user iterate on campaign output without re-running the full
+pipeline — and how do you make agent routing visible rather than a black box?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[ ] Advising
+[x] Designing  — wireframe designed before result.html was coded; 8 layout
+                  decisions documented with rationale
+[x] Realizing  — /refine endpoint, ReAct routing in assistant.py, SSE progress
+                  on /generate, CTA key normalisation fix
+[x] Managing   — routing label visible in the UI; proactive suggestions on load
+
+
+3. What makes a good decision here
+
+- Vision never re-runs during refinement (the product has not changed)
+- Routing decisions are visible — the user sees which agents ran
+- Sliders are instant; LLM calls happen only when Refine is clicked
+- The system surfaces suggestions before the user has to ask
+
+
+4. What I decided
+
+A two-column sticky layout. Sliders above chat. A visible routing label in
+the right panel. A proactive /suggest call on page load. Single-pass ReAct
+routing: one LLM call decides which agents re-run, then they run in pipeline
+order. For generation, SSE streaming so the user sees each agent step
+complete instead of staring at a blank screen for 90 seconds.
+
+
+5. Why this decision
+
+Method: Lab and Showroom.
+
+The wireframe came before any HTML — the Showroom phase applied to the
+design itself, with eight layout decisions and their rationale recorded
+first (@wireframes). The two-column choice eliminated the two common
+alternatives before any code: tabs would force switching back and forth,
+and a stacked layout would mean scrolling past the whole report to reach the
+panel; side by side keeps both in view, like a code editor with a preview¹.
+
+Slider placement followed the same document: slider changes are
+deterministic with no LLM call, so they should be the first thing a user
+tries — cheap, instant, reversible — while chat handles free-form requests
+that need reasoning (@wireframes). The sliders map through
+map_sliders_to_params(tone, age, formality), which returns tone, age_hint,
+and a formality instruction fed into the next run (@agent-contracts). No
+server call until Refine is clicked.
+
+[IMAGE: diagrams/refinement-routing.png — one refine: a slider or chat change goes to the router, which re-runs only the chosen agents, guardrails always after copywriter]
+
+The visible routing label answers the brief's "visible agent collaboration"
+requirement and the course-evaluator stakeholder's need to see which agents
+ran, not just the changed output (@stakeholder-analysis · @requirements-scope).
+After each /refine, get_routing returns agents_to_run, reasoning, and
+routing_label, and the label renders in the panel (@agent-contracts).
+
+Proactive suggestions follow the wireframe too: the assistant reviews the
+output immediately and surfaces two or three improvements, the way an
+account manager reviews creative before the client does (@wireframes). In 3
+test runs it surfaced actionable suggestions in 2; the generic one came from
+a campaign that was already strong.
+
+The stateless design was forced by the no-session-state rule and turned out
+more robust than what I had planned. The full output state travels as JSON
+in every /refine request, so every call is independently auditable. One bug
+surfaced here: mistral:7b sometimes returned "Variant 1" with a capital V
+and a space instead of "variant_1", and the template threw a KeyError. The
+fix normalises all LLM output keys to snake_case before any agent returns.
+
+What I'd recommend:
+Write the wireframe before the template. The eight rationale statements
+eliminated three layout mistakes before any HTML existed. At the wireframe
+stage, rejecting a bad layout costs nothing.
+
+GAP found:
+Refinement history is client-side only. A refresh loses the chat log and
+routing history. The "iterate in a live meeting" criterion assumes the
+session lasts the meeting — which it does unless someone refreshes. The
+no-session-state rule is what creates this limit (@constraints).
+
+
+6. Does this hold up
+
+- Vision skipped in /refine:  pass — vision/color never appear in agents_to_run during refinement
+- Routing label visible:      pass — routing_label renders after each /refine
+- Proactive suggestions fire: pass — /suggest called on page load
+- SSE progress steps show:    pass — vision → audience → copy → guardrails → CTA update live
+- CTA keys consistent:        pass — variant_1/variant_2 normalised; no 500s since the fix
+
+Assumptions I'm making:
+The browser supports Fetch with ReadableStream. All modern browsers do.
+
+What surprised me:
+The stateless design, forced by a constraint, proved more robust than the
+session approach I had planned. The limitation turned into a simpler, more
+auditable architecture.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing → Managing (the pipeline is now an interactive
+tool, not a one-shot report generator).
+
+What I can now do:
+Demo the full loop: generate → see routing → adjust the tone slider →
+refine → see updated copy — all in one session, no re-upload.
+
+Ongoing monitoring:
+Watch routing_label in the chat history. If it always shows the same agents
+regardless of the request, the routing prompt needs tuning (@assistant).
+
+How I'll know this worked:
+"Make the CTA more urgent" routes to cta_optimizer only. "Change the tone to
+playful" routes to copywriter + guardrails + cta_optimizer. Vision never
+appears in any refinement routing label.
+
+
+¹ The layout and routing rationale live in the wireframes and refinement
+  design docs; the code that runs it is @result-html and @assistant.
+
+Files: @result-html, @assistant, @cta-optimizer, @app, @agent-contracts
+Diagrams: @refinement-routing, @wireframe-result-page
+Source: @refinement-loop, @wireframes, @gap-analysis, @requirements-scope, @constraints, @stakeholder-analysis
+LO stages: Designing, Realizing, Managing

@@ -9,3 +9,6 @@ CLAUDE.md
 static
 Example
 chroma_store
+_REVIEW_THEN_DELETE/
+diagrams/wireframes/*.html
+run_log.jsonl

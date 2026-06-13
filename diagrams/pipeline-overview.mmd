@@ -1,0 +1,30 @@
+---
+title: Pipeline overview — one campaign run, start to finish
+---
+flowchart LR
+    classDef start fill:#1b263b,stroke:#0d1b2a,color:#ffffff;
+    classDef local fill:#e0e1dd,stroke:#778da9,color:#0d1b2a;
+    classDef remote fill:#9d4edd,stroke:#5a189a,color:#ffffff;
+    classDef ollama fill:#3a6ea5,stroke:#0f3460,color:#ffffff;
+
+    T(["/generate<br/>image + description + tone"]):::start
+
+    CO["color.extract<br/>(local)"]:::local
+    VI["vision.analyze<br/>(OpenRouter)"]:::remote
+    RA["rag.retrieve<br/>(local ChromaDB)"]:::local
+    AU["audience.segment<br/>(Ollama mistral)"]:::ollama
+    CW["copywriter.generate<br/>(Ollama gemma4)"]:::ollama
+    GR["guardrails.check<br/>(local regex)"]:::local
+    CT["cta_optimizer.optimize<br/>(Ollama mistral)"]:::ollama
+
+    T --> CO
+    T --> VI
+    VI --> AU
+    RA -. "doc_context" .-> AU
+    RA -. "doc_context" .-> CW
+    RA -. "doc_context" .-> CT
+    CO --> CW
+    AU --> CW --> GR --> CT
+    CT --> R(["Campaign report<br/>stored in _run_store"]):::start
+
+    T -. "SSE step events:<br/>vision · audience · copywriter<br/>· guardrails · cta · done" .-> R

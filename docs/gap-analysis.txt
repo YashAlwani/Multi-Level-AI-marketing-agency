@@ -1,0 +1,104 @@
+====================================================================
+ MARKETING AGENT — THE GAP ANALYSIS
+ How a campaign is made today, and how it changes with the agent
+====================================================================
+
+WHAT THIS IS
+------------
+This is the before-and-after story that justifies the whole project.
+"Before" is how a marketing campaign gets made inside a human agency.
+"After" is how the same work happens once a team of specialist AI agents
+does it. Every feature in the rest of the system traces back to a gap
+shown here, so this document comes first.
+
+The project brief sets the stakes plainly. Copywriter roles fell 28% in a
+year, for two years running. One Dutch agency went from 290 copywriters to
+20 after adopting AI. The work most exposed is the execution layer — the
+research, the audience definition, the third draft of someone else's brief.
+This system automates exactly that layer, so the gap it closes is real and
+already being closed in the market.
+
+
+THE WORK TODAY (AS-IS)
+----------------------
+A campaign passes from hand to hand. A client sends a brief. An account
+planner researches the product and the market, then defines a target
+audience by hand. A copywriter drafts variants, rewrites them after
+internal feedback, and waits. A legal reviewer reads every line for risky
+claims and kicks anything doubtful back to the writer. A conversion
+specialist tunes the call to action for the channel. Then it goes to the
+client, who asks for revisions, and parts of the loop run again.
+
+Even the smallest agency performs five distinct functions to do this:
+product and market analysis, audience definition, copy and creative,
+conversion and call-to-action work, and compliance review. No single
+person owns the whole chain well — a creative director makes weak media
+calls, a media buyer writes weak copy. The phases need genuinely different
+skills, which is why agencies split them across roles in the first place.
+
+The cost of that split is time and hand-offs. The job is measured in days,
+most of it spent waiting, relaying, and re-reviewing.
+
+See the picture: diagrams/gap-as-is.mmd
+
+
+THE WORK WITH THE AGENT (TO-BE)
+-------------------------------
+The same five functions become five places in one automated pass:
+
+- Product and market analysis -> the vision and color agents read the
+  product image into tags, signals, mood, and a palette.
+- Audience definition -> the audience agent turns those signals into one
+  named persona with an age range, interests, and platform behaviour.
+- Copy and creative -> the copywriter agent writes two variants for that
+  persona, one emotional and one benefit-led.
+- Compliance review -> the guardrails check scans every line for risky
+  claims with plain rules, in well under a second.
+- Conversion -> the cta_optimizer agent scores each call to action and
+  suggests a stronger one.
+
+What was days of relay becomes about a minute of machine work. The one
+human step the "after" picture keeps on purpose is review: a person reads
+the report and refines it, the same judgement an account manager applies
+before a client sees the work — and nothing else.
+
+See the picture: diagrams/gap-to-be.mmd
+
+
+WHY KEEP A HUMAN IN THE LOOP
+----------------------------
+The brief is blunt about the risk: this kind of system eliminates
+middle-class jobs, and one agent's mistake can become another agent's
+input. So the design does not pretend the output is finished. The campaign
+is presented as a professional starting point that needs human review, the
+compliance flags are shown rather than silently fixed, and the refinement
+panel exists so a person stays in control of tone, audience, and wording.
+The limits are documented and visible, not hidden.
+
+
+WHY IT'S BUILT THIS WAY
+-----------------------
+Because the gap is structural, not cosmetic. The agencies split the work
+across five roles for a reason — each phase needs different context — so
+the agents mirror that same split rather than asking one model to do
+everything at once. The decision to use five specialists instead of one
+generalist is tested in DL-02; the human-review stance is argued in DL-08.
+Every later decision log points back to a gap on this page.
+
+
+WHERE THIS LIVES IN THE CODE
+----------------------------
+- app.py                 runs the five-function pass in fixed order
+- agents/vision.py        product analysis (image -> tags, signals)
+- agents/color.py         product analysis (image -> palette)
+- agents/audience.py      audience definition (-> persona)
+- agents/copywriter.py    copy and creative (-> two variants)
+- agents/guardrails.py    compliance review (plain-rule claim checks)
+- agents/cta_optimizer.py conversion (-> CTA scores and suggestions)
+- Project_case.md         the workforce data and the assignment brief
+
+
+DIAGRAMS FOR THIS DOCUMENT
+--------------------------
+- diagrams/gap-as-is.mmd   the manual agency workflow, as swimlanes
+- diagrams/gap-to-be.mmd   the same five functions as one agent pass

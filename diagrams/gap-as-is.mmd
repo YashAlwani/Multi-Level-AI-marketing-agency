@@ -1,0 +1,35 @@
+---
+title: AS-IS — How a campaign is made by a human agency
+---
+flowchart TB
+    classDef client fill:#1b263b,stroke:#0d1b2a,color:#ffffff;
+    classDef work fill:#e0e1dd,stroke:#778da9,color:#0d1b2a;
+    classDef wait fill:#f4d35e,stroke:#c9a227,color:#3a2f00;
+
+    C0(["Client sends a product brief"]):::client
+
+    subgraph PLANNER["Account planner / strategist"]
+        A1["Research the product<br/>and the market<br/>(hours)"]:::work
+        A2["Define the target<br/>audience by hand"]:::work
+    end
+
+    subgraph CREATIVE["Copywriter / creative"]
+        B1["Draft ad copy<br/>variants"]:::work
+        B2["Rewrite after<br/>internal feedback"]:::wait
+    end
+
+    subgraph LEGAL["Legal / compliance reviewer"]
+        L1["Read every line for<br/>risky claims by hand"]:::work
+    end
+
+    subgraph CONVERSION["Media / conversion specialist"]
+        M1["Tune the call to action<br/>for the channel"]:::work
+    end
+
+    C0 --> A1 --> A2 --> B1 --> B2
+    B2 -. "revision loop<br/>(days)" .-> B1
+    B2 --> L1
+    L1 -. "kick back if<br/>a claim is risky" .-> B1
+    L1 --> M1
+    M1 --> C1(["Campaign returned to client<br/>— elapsed: days"]):::client
+    C1 -. "client revisions" .-> A2

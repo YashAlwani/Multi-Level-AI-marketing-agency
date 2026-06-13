@@ -1,0 +1,136 @@
+Marketing Agent — A Multi-Agent Marketing Team
+GitHub: github.com/YashAlwani/MarketingAI
+
+
+What is this?
+
+A team of specialist AI agents that turns one product image, a short
+description, and a tone into a finished marketing campaign: an audience
+persona, two ad variants, compliance flags, and scored calls to action. A
+person reviews and refines the result; the agents do the work. It runs as a
+Flask web app, streams its progress live, and costs nothing to run — vision
+goes through a free API tier and all text generation runs on a local model.
+
+
+Why
+
+The brief is blunt about the stakes. Copywriter roles fell 28% in a year,
+for two years running; one Dutch agency went from 290 copywriters to 20
+after adopting AI. The work most exposed is the execution layer — research,
+audience definition, the third draft of a brief. This project asks whether a
+team of specialist agents produces better campaign output than one
+generalist model, and where that improvement comes from. The before-and-after
+of agency work, and the human-review stance the system takes, are set out in
+the gap analysis (@gap-analysis · @gap-as-is · @gap-to-be).
+
+
+What was accomplished
+
+A complete, working system: a Flask backend, a streamed upload-and-result
+UI, seven specialist agents in a fixed pipeline, a local RAG layer for brand
+documents, a regex compliance gate, an interactive refinement loop, and
+append-only telemetry. Every architectural decision has its own decision
+log, and every part is explained in plain language — without reading code —
+in the design documents and diagrams pointed to under each sprint below.
+
+----------------------------------------------------------------------
+
+Sprint 0 — Scope and the Zero-Cost Stack
+
+Before any agent was written, the work a human agency does was mapped into
+five functions — product analysis, audience, copy, compliance, conversion —
+and that became the five-agent plan (@gap-analysis · @gap-as-is). Scope and
+model stack were locked together: five agents to build, three features
+deferred, and a stack that runs for free — a free API tier for vision, a
+local model for all text (@system-c4-container). Then the central question
+was answered head-on: a single-prompt "monolith" was built first and
+compared against the pipeline on the same image. "General public" became
+"Eco-Conscious Millennial Athlete, 25-34" — the gain came from giving each
+agent a narrow job and the right context (@pipeline-overview · @gap-to-be).
+
+Designs & reports: @gap-analysis · @gap-as-is · @gap-to-be · @pipeline-architecture · @pipeline-overview · @system-c4-container · @competitor-scan
+
+Decision logs: @[DL-01] (scope and the model stack) · @[DL-02] (one agent vs five specialists, with the side-by-side evidence)
+
+What it unlocked: a fixed five-agent pipeline shape, proven better than a
+monolith, running at zero cost — the backbone every later sprint builds on.
+
+
+Sprint 1 — Reading the Product and Guarding the Output
+
+The two ends of the pipeline were built. Vision reads the product image into
+buyer signals; the key lesson was that the output schema — buyer signals,
+not visual attributes — mattered more than which model ran, and a two-model
+fallback keeps the free tier from blocking the whole pipeline
+(@pipeline-dataflow). At the other end, compliance: an LLM judge was tested
+and missed two of five planted violations, so the legal-review function was
+built as deterministic regex instead — seven patterns, under a millisecond,
+fully auditable (@pipeline-overview · @gap-as-is).
+
+Designs & reports: @pipeline-architecture · @pipeline-dataflow · @pipeline-overview · @agent-contracts
+
+Decision logs: @[DL-03] (the vision model and the output schema) · @[DL-04] (an LLM judge vs deterministic rules for compliance)
+
+What it unlocked: a pipeline that reads the product reliably and never shows
+copy without a fresh, traceable compliance check.
+
+
+Sprint 2 — Grounding Copy in Brand Documents
+
+Campaigns came back generic whenever the product's real details lived in a
+spec sheet the image could not show. A local RAG layer was added — ChromaDB
+for storage and a local embedding model — so brand briefs and manuals can be
+uploaded once and fed into the audience, copywriter, and CTA agents. With a
+manual uploaded, "Insulated. BPA-free." became "aerospace-grade double-wall
+vacuum technology, BPA-free Tritan lid, 48h cold retention" — grounded
+claims, not invented ones (@pipeline-overview · @system-c4-container).
+
+Designs & reports: @pipeline-architecture · @pipeline-overview · @system-c4-container · @constraints
+
+Decision logs: @[DL-05] (which local vector store, and proof that retrieval makes copy more specific)
+
+What it unlocked: copy that reflects brand details not visible in the image,
+with no external service to run.
+
+
+Sprint 3 — Making It Interactive
+
+A one-shot report is not a workflow. The result page was redesigned as a
+two-column layout with a sticky refinement panel — sliders for tone, age,
+and formality, a chat box, and a visible routing label — all drawn as a
+wireframe before any HTML was written (@wireframes · @wireframe-result-page).
+A ReAct router decides the smallest set of agents to re-run on each refine,
+keeping guardrails always after copywriter, so iterating is fast and never
+skips a compliance check (@refinement-routing). The assistant also reviews
+the campaign on load and suggests what to fix first.
+
+Designs & reports: @refinement-loop · @wireframes · @wireframe-result-page · @refinement-routing · @stakeholder-analysis
+
+Decision logs: @[DL-06] (refining without re-running the full pipeline, and making routing visible)
+
+What it unlocked: an interactive tool where a person stays in control —
+adjusting tone or audience and seeing exactly which agents ran.
+
+
+Sprint 4 — Speed, Streaming, and Observability
+
+The last sprint made the system stable and measurable. A long-context run
+timed out, which forced a model split: a stronger creative model for the
+copywriter, a more JSON-reliable one for the structured agents, keeping the
+whole pass under 100 seconds (@pipeline-dataflow). Server-Sent Events stream
+each step to the page so a minute-long run shows progress instead of a blank
+spinner. Finally, append-only telemetry records one metrics line per run,
+and the first batch of runs confirmed three earlier predictions — fallback
+frequency, urgency-flag rate, and pipeline time (@campaign-lifecycle).
+
+Designs & reports: @pipeline-architecture · @pipeline-dataflow · @campaign-lifecycle · @research-questions
+
+Decision logs: @[DL-07] (creative vs structured model split) · @[DL-08] (telemetry, and what the first runs confirmed)
+
+What it unlocked: a pipeline that runs fast, shows its work live, and can
+answer "is it improving?" with data.
+
+----------------------------------------------------------------------
+
+Diagrams live in diagrams/ (with 00-INDEX.txt). Each sprint's decision logs
+carry the full reasoning behind the summary above.

@@ -1,0 +1,153 @@
+DL-02 — Pipeline vs Monolith: One Agent or Five Specialists?
+Marketing Agent POC
+
+
+0. Context
+
+The assignment asks whether specialist agents produce better output than a
+generalist — but that stays an opinion until there is a real comparison. So
+I built the monolith first and ran it. The competitor scan had already
+shown that tools like Jasper and Copy.ai are engineered monoliths — one LLM
+call per template fill — and that the open question is whether decomposing
+that into specialists with clean hand-offs produces better output
+(@competitor-scan). The monolith prototype was deliberately the same shape
+as those tools. Running it first is how the question got an observable
+answer.
+
+This is the core structural decision. The five-agent split proved here is
+exactly the move from the AS-IS agency to the TO-BE pipeline in the gap
+analysis (@gap-to-be), and it becomes the fixed shape every later log
+inherits.
+
+
+1. Research question
+
+Does breaking the pipeline into specialist agents produce meaningfully
+better campaign output than one agent doing everything — and where does the
+improvement actually come from?
+
+
+2. Current LO stage
+
+[x] Analyzing  — agencies specialise because tasks need different context,
+                  not because of preference
+[x] Designing  — mapped agency roles to agent scope: product analyst,
+                  planner, creative, legal reviewer, media strategist
+[x] Realizing  — built the monolith first, compared output side by side,
+                  added audience as a dedicated middle stage
+
+
+3. What makes a good decision here
+
+- The comparison is fair: same model, same image, same description
+- "Better" is observable without asking the model to grade itself
+- The audience stage adds real value, not just latency
+
+
+4. What I decided
+
+Decompose by agency role. Five agents, each with a narrow scope and only
+the context it needs. The audience agent sits between vision and copywriter
+— its job is to turn product signals into a persona the copywriter actually
+writes for.
+
+
+5. Why this decision
+
+Method: Showroom and Lab.
+
+The monolith was proof of the problem. The prompt was direct: "You are a
+marketing expert. Analyse this product image and write two ad variants." On
+the eco water bottle, the output was:
+
+  "Check out this amazing product! Stay hydrated and save the planet. Shop now!"
+  Audience: general public
+
+The pipeline design names this failure mode: when one call does product
+analysis, audience inference, and copy at once, it defines the audience in
+terms of the copy it is already imagining, and specialisation breaks that
+circular dependency¹. The monolith confirmed it — "general public" is the
+model taking the easy path because it was handed four jobs at once.
+
+That finding drove the agent scope. The audience agent receives vision data
+and returns persona_label, age_range, interests, and platform_behavior. The
+copywriter receives the full audience output and the description, but never
+the raw vision JSON (@agent-contracts). Each agent gets only the context it
+needs.
+
+With the multi-agent pipeline on the same water bottle:
+
+  Audience: "Eco-Conscious Millennial Athlete, 25-34, sustainability + fitness"
+  Variant 1: "Stay hydrated, stay green. 24h cold, zero plastic compromise. #LiveGreen"
+  Variant 2: "Insulated. BPA-free. Built for your gym bag and the planet. Shop the change."
+
+Same model, same image. The copywriter received a pre-built persona instead
+of raw tags — one job instead of four. The competitor scan had listed
+exactly this as something no existing tool does: derive a target audience
+from product-image signals and use it as a hard constraint for copy
+(@competitor-scan). The before-and-after confirms it is the mechanism that
+matters.
+
+[IMAGE: diagrams/pipeline-overview.png — the five-agent pipeline the monolith comparison produced, color and vision into audience, then copywriter, guardrails, and CTA]
+
+The audience stage was the decisive test. Without it, the copywriter read
+vision output directly and produced better-than-monolith but still generic
+copy. Adding the audience agent as a dedicated middle step — its own call,
+its own narrow input — is what made copy persona-specific.
+
+What I'd recommend:
+Build the monolith first, then the multi-agent version. Running the
+comparison is faster than arguing about it. "General public" to
+"Eco-Conscious Millennial Athlete, 25-34" is not a subtle difference.
+
+GAP found:
+The copywriter prompt does not constrain the variant angles, so both
+variants can share a structure despite being labelled separately. The spec
+requires distinct creative angles — fixed this sprint: variant_1 opens with
+an emotional hook, variant_2 with a product benefit (@agent-contracts).
+Without that, specialisation improves targeting but not differentiation.
+
+
+6. Does this hold up
+
+- Output improvement observable: pass — "general public" → "Eco-Conscious Millennial Athlete, 25-34"
+- Audience stage adds value:     pass — without it copy is generic; with it copy references persona identity
+- Latency acceptable:            pass — the audience agent adds about 20s; the quality gain justifies it
+
+Assumptions I'm making:
+The improvement generalises beyond the water bottle. I ran it on two
+products — water bottle and bamboo toothbrush — and both showed the same
+pattern.
+
+What surprised me:
+The gain is not about model capability — it is about information
+architecture. The copywriter got a narrower scope and the right context at
+the right time. Same model, same weights.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing → Realizing (compliance, CTA, RAG, refinement).
+
+What I can now do:
+Add the remaining agents on top of a validated audience → copy pipeline.
+Each stage has a clear input and output contract to test against
+(@agent-contracts).
+
+Ongoing monitoring:
+If copy turns generic again, check the audience output first. A
+persona_label reverting to "general audience" is the signal.
+
+How I'll know this worked:
+persona_label is never "general audience" on a product-specific input.
+Variant 1 and Variant 2 read as structurally different — one emotional
+hook, one product benefit.
+
+
+¹ The specialisation argument is laid out in the pipeline architecture;
+  the agents that realise it are @vision, @audience, and @copywriter.
+
+Files: @vision, @audience, @copywriter, @app, @agent-contracts
+Diagrams: @pipeline-overview, @gap-to-be
+Source: @pipeline-architecture, @gap-analysis, @competitor-scan
+LO stages: Analyzing, Designing, Realizing
