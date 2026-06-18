@@ -1,0 +1,99 @@
+Marketing Agent — A Team of AI Agents That Build Ad Campaigns
+GitHub: github.com/YashAlwani/MarketingAI
+
+
+What is this?
+
+It is a small team of AI "agents" that build a marketing campaign for you. An agent is just a program that does one narrow job. You give the team three things: a photo of a product, a short description, and the tone you want (for example, fun or serious). The team gives you back a finished campaign. That campaign includes a description of the customer the ad is aimed at, two versions of the ad text, a list of anything that might break advertising rules, and a score for how strong each "call to action" is. (A call to action is the line that tells the reader what to do, like "Buy now" or "Sign up.")
+
+A person always reviews and adjusts the result — the agents do the heavy lifting, but a human stays in charge. The whole thing runs as a website (built with Flask, a common Python tool for building websites). It shows its progress live as it works, and it costs nothing to run. The part that "looks" at the image uses a free online service, and all the writing is done by an AI model that runs on your own computer.
+
+
+Why build it?
+
+The reason is simple: AI is already replacing this kind of work. The project
+brief lays out the stakes. Copywriter jobs dropped 28% in a single year, two years in a row. One Dutch agency cut its team from 290 copywriters down to 20 after it started using AI. The jobs most at risk are the routine ones — research, defining the audience, writing the third draft of a brief.
+
+So this project asks one question: does a team of specialist agents produce a
+better campaign than one single, do-everything AI model? And if it does, why? The full before-and-after of how agency work changes, plus the choice to keep a human reviewing every result, is laid out in the gap analysis (@gap-analysis · @gap-as-is · @gap-to-be).
+
+
+What was built
+
+A complete, working system. It has: a website backend, an upload page that shows results as they stream in, seven specialist agents that run in a fixed order, a way to feed in the brand's own documents, a fast rule-based check for advertising violations, a loop that lets you refine the result, and a log that records every run. Every major decision has its own "decision log" that explains the choice. And every part is explained in plain English — no need to read any code — in the design documents and diagrams listed under each sprint below. (A "sprint" is just one chunk of work, done in order.)
+
+----------------------------------------------------------------------
+
+Sprint 0 — Setting the Scope and a Zero-Cost Setup
+
+Before writing a single agent, the work a real agency does was broken into five jobs: study the product, define the audience, write the copy, check the rules, and improve the call to action. That became the plan for five agents (@gap-analysis · @gap-as-is). The scope and the tools were locked in at the same time: five agents to build, three nice-to-have features left for later, and a setup that runs for free — a free online service for reading images, and an AI model running locally for all the writing (@system-c4-container).
+
+Then the main question was tested directly. First, one big "do-everything" prompt was built and run on a product image. Then the five-agent team was run on the same image. The single prompt gave a vague audience: "general public." The team gave a sharp one: "Eco-Conscious Millennial Athlete, 25-34." The lesson was that giving each agent one narrow job, plus the right information, is what made the result better (@pipeline-overview · @gap-to-be).
+
+Designs & reports: @gap-analysis · @gap-as-is · @gap-to-be · @pipeline-architecture · @pipeline-overview · @system-c4-container · @competitor-scan
+
+Decision logs: @[DL-01] (the scope and the choice of tools) · @[DL-02] (one agent vs five specialists, with the side-by-side proof)
+
+What it unlocked: a fixed five-agent design, shown to beat the single-prompt
+version, running at no cost — the foundation every later sprint builds on.
+
+
+Sprint 1 — Reading the Product and Guarding the Output
+
+This sprint built the two ends of the pipeline. At the front, an agent "reads" the product photo and turns it into buying signals — clues about who would buy it and why. The key lesson: what mattered most was not which image model was used, but what the model was asked to return. Asking for buying signals worked far better than asking for a plain list of what was in the picture. A backup model was also added, so if the free service fails, the whole pipeline does not stop (@pipeline-dataflow).
+
+At the back end comes the rules check. The first idea was to use an AI model as a "judge" to catch banned phrases — but in testing it missed two of five planted violations. So that job was rebuilt with simple, fixed text-matching rules instead. (These rules are called "regex" patterns — set rules that scan text for specific words.) Seven rules, runs in under a millisecond, and you can see exactly why each flag was raised (@pipeline-overview · @gap-as-is).
+
+Designs & reports: @pipeline-architecture · @pipeline-dataflow · @pipeline-overview · @agent-contracts
+
+Decision logs: @[DL-03] (the image model and what it returns) · @[DL-04] (an AI judge vs fixed rules for the rules check)
+
+What it unlocked: a pipeline that reads the product reliably and never shows
+ad copy without first running a fresh, traceable rules check.
+
+
+Sprint 2 — Grounding Copy in the Brand's Own Documents
+
+A problem showed up: the campaigns were generic whenever the real product
+details lived in a spec sheet that the photo could not show. The fix was to let the user upload the brand's own documents — briefs, manuals, and so on. The system stores them and pulls the relevant parts into the audience, copywriter, and call-to-action agents. (The technical name for this is "RAG" — the system retrieves matching pieces of your documents and feeds them to the AI. It uses ChromaDB, a database that runs locally, to store them; nothing leaves your computer.)
+
+The difference was clear. Without a manual, the copy said "Insulated. BPA-free." With the manual uploaded, it said "aerospace-grade double-wall vacuum technology, BPA-free Tritan lid, 48h cold retention" — real facts from the document, not made-up claims (@pipeline-overview · @system-c4-container).
+
+Designs & reports: @pipeline-architecture · @pipeline-overview · @system-c4-container · @constraints
+
+Decision logs: @[DL-05] (which local database to use, and proof that pulling in documents makes the copy more specific)
+
+What it unlocked: ad copy that reflects real brand details the photo can't
+show — with no outside service to pay for or run.
+
+
+Sprint 3 — Making It Interactive
+
+A one-time report is not really a tool. So the results page was redesigned into two columns, with a panel on the side for making changes. That panel has sliders for tone, age, and formality, a chat box, and a label showing which agents ran. All of this was sketched as a rough drawing (a "wireframe") before any code was written (@wireframes · @wireframe-result-page).
+
+When you make a change, the system does not re-run everything. A "router" decides the smallest set of agents it needs to re-run, so changes are fast. (This router uses a method called ReAct, where the AI reasons step by step about what to do.) One rule is fixed: the rules check always runs right after the copywriter, so no edit can ever skip it (@refinement-routing). The assistant also reads the campaign when the page loads and suggests what to fix first.
+
+Designs & reports: @refinement-loop · @wireframes · @wireframe-result-page · @refinement-routing · @stakeholder-analysis
+
+Decision logs: @[DL-06] (refining the result without re-running everything, and showing which agents ran)
+
+What it unlocked: a real interactive tool where the person stays in control —
+adjusting tone or audience and seeing exactly which agents ran.
+
+
+Sprint 4 — Speed, Live Updates, and Tracking
+
+The last sprint made the system fast, stable, and measurable. A long run once timed out, which forced a split: a stronger, more creative AI model for writing the copy, and a faster, more reliable one for the agents that return tidy, structured data. This kept the whole run under 100 seconds (@pipeline-dataflow).
+
+The system also streams each step to the page as it happens, so a run that takes about a minute shows live progress instead of a frozen loading spinner. (This uses a web technique called Server-Sent Events, which lets the server push updates to the page.) Finally, every run writes one line of data to a log file — things like how often the backup model kicked in and how long the run took. The first batch of runs confirmed three earlier predictions: how often the backup fired, how often urgency flags were raised, and the total run time (@campaign-lifecycle).
+
+Designs & reports: @pipeline-architecture · @pipeline-dataflow · @campaign-lifecycle · @research-questions
+
+Decision logs: @[DL-07] (the creative vs structured model split) · @[DL-08] (the run log, and what the first runs confirmed)
+
+What it unlocked: a pipeline that runs fast, shows its work live, and can
+answer "is it getting better?" with real numbers.
+
+----------------------------------------------------------------------
+
+The diagrams live in the diagrams/ folder (start with 00-INDEX.txt). Each sprint's decision logs hold the full reasoning behind the summary above.

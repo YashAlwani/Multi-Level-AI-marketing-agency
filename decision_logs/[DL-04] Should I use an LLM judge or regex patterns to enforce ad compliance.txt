@@ -1,0 +1,98 @@
+DL-04 — Compliance: LLM Judge vs Deterministic Rules
+Marketing Agent POC
+
+
+0. Context
+
+The pipeline writes ad copy automatically. Without a compliance layer, "guaranteed results" — an FTC violation — could land in output that looks polished and ready to use. The compliance approach was decided up front: use plain Python rules, not an LLM judge and not an external moderation API. But the reasoning needed a test to be credible rather than assumed, and the lab test confirmed it.
+
+Guardrails is the legal-review function from the AS-IS agency, now automated and run on every campaign (@gap-analysis · @gap-as-is). It sits between copywriter and CTA — the gate the copy must pass before scoring (@pipeline-architecture).
+
+
+1. Research question
+
+Should compliance checking use an LLM judge or a rule-based system — and what are the consequences of a false negative in each case?
+
+
+2. Current LO stage
+
+[ ] Analyzing
+[ ] Advising
+[x] Designing  — tested an LLM judge, rejected it, designed the regex set
+[x] Realizing  — built guardrails.py; wired it as a mandatory stage after copywriter
+[ ] Managing
+
+
+3. What makes a good decision here
+
+- Zero false negatives on the required claim categories
+- The check never slows the pipeline meaningfully
+- The check is readable and auditable by a non-engineer
+
+
+4. What I decided
+
+Pure Python regex. Seven patterns covering the required categories: guarantee claims, health claims, superlatives, urgency language, scientific claims, weight-loss claims, and free offers. No LLM call. Always runs after copywriter.
+
+
+5. Why this decision
+
+Method: Lab.
+
+I tested mistral:7b as a compliance judge on five ad samples with known violations. It caught three of five. The two misses:
+
+  — "Results guaranteed or your money back" — not flagged (the model treated
+    the refund offer as a mitigating factor)
+  — "Our formula is clinically tested by dermatologists" — not flagged (the
+    model judged the context acceptable)
+
+Both are FTC violations in real published copy. An LLM that decides context makes a guarantee claim acceptable is making a legal judgement call it is not qualified to make. The risk is asymmetric: a false positive (flagging clean copy) is annoying; a false negative (missing a guarantee claim) is liability. A 40% miss rate on a five-sample test is the wrong risk profile for a compliance gate.
+
+The runtime argument is just as concrete. An LLM judge adds 10–30 seconds to a pipeline already running 60–90; pure regex adds under a millisecond. Adding a second Ollama call here would have pushed past the 120-second limit (@requirements-scope). Auditability matters too: each flag returns a variant id, the matched text, and a reason string — three fields, all traceable. There is no softmax to explain. "Guaranteed" either matched pattern one or it did not.
+
+[IMAGE: diagrams/pipeline-overview.png — guardrails sits between copywriter and CTA, the gate every variant passes before scoring]
+
+The seven patterns cover the required categories exactly, all case-insensitive, each with a one-line reason for display (@requirements-scope). guardrails.py returns clean_copy (unchanged — it flags, it does not edit) and a flags list (@agent-contracts).
+
+What I'd recommend:
+For any binary legal or policy check, use deterministic rules. Reserve LLMs for cases where context genuinely matters. "Does this sentence contain the word 'guaranteed'?" is not a judgement call.
+
+GAP found:
+Novel phrasing slips through. "Tested in partnership with leading dermatologists" does not match the scientific-claim pattern. The seven patterns cover seven known categories — coverage that is necessary, not exhaustive. This is the accountability limit the project documents openly: the compliance check catches known categories, not everything.
+
+
+6. Does this hold up
+
+- Zero false negatives on the test set: pass — all 7 patterns detected correctly in @validate
+- Runtime:                              pass — under 1ms, nothing measurable added to pipeline_s
+- Auditable:                            pass — each flag: variant id, matched text, reason
+
+Assumptions I'm making:
+The seven categories cover the most common violations in product advertising. Industry-specific or novel regulatory language needs new patterns added by hand.
+
+What surprised me:
+How often the copywriter generates urgency language unprompted. About 40% of runs flag urgency — "limited time", "act now" appear by default. The copywriter prompt probably needs an explicit instruction to avoid urgency unless the brief asks for it.
+
+
+7. What this unlocks
+
+Next LO stage: Realizing → Realizing (CTA optimizer can now receive clean,
+flagged copy and score it).
+
+What I can now do:
+Run the full copy → compliance → CTA chain. Any risky claim is visible before the CTA optimizer scores the variant (@requirements-scope).
+
+Ongoing monitoring:
+The compliance_flags count is logged in run_log.jsonl. If it stays high, the copywriter prompt needs adjustment — not more patterns.
+
+How I'll know this worked:
+"guaranteed results" in a description triggers a flag on every run. Clean copy on standard descriptions returns an empty flags list.
+
+
+¹ The guardrails stage and its place in the run are described in the
+  pipeline architecture; the code is @guardrails.
+
+Files: @guardrails, @validate, @agent-contracts
+Diagrams: @pipeline-overview
+Source: @pipeline-architecture, @gap-analysis, @requirements-scope
+LO stages: Designing, Realizing

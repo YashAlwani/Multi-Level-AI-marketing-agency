@@ -1,0 +1,82 @@
+====================================================================
+ MARKETING AGENT — DIAGRAM INDEX (what each picture shows)
+====================================================================
+
+This folder holds the diagrams used by the Marketing Agent design
+documents and decision logs. Each one is a Mermaid file (.mmd) — a small
+text file that describes a picture — rendered to a .png by
+build_design_docs.py. To see a picture, open the .png, or paste the .mmd
+into https://mermaid.live or any editor with a Mermaid preview.
+
+Every entry below says, in plain words, what the diagram shows, which
+document it belongs to, and where the matching code lives.
+
+--------------------------------------------------------------------
+ GAP ANALYSIS  (how the work changes, before vs after the agent)
+--------------------------------------------------------------------
+
+gap-as-is.mmd
+  BEFORE: a campaign made by a human agency, drawn as swimlanes
+  (account planner, creative, legal, conversion). Shows every hand-off,
+  revision loop, and wait that stretches the job across days.
+  Document: docs/gap-analysis.txt · Source: Project_case.md
+
+gap-to-be.mmd
+  AFTER: the same five agency functions collapsed into one automated
+  agent pass of about a minute, with a person kept only for review and
+  refinement.
+  Document: docs/gap-analysis.txt · Code: app.py
+
+--------------------------------------------------------------------
+ PIPELINE  (how one campaign run works)
+--------------------------------------------------------------------
+
+pipeline-overview.mmd
+  One /generate run, left to right: color and vision read the product,
+  RAG adds document context, then audience, copywriter, guardrails, and
+  cta_optimizer run in order. Notes the SSE step events sent to the page.
+  Document: docs/pipeline-architecture.txt · Code: app.py
+
+pipeline-dataflow.mmd
+  The same agents top to bottom, each with the real fields it receives
+  and returns (product_tags, persona_label, clean_copy, flags, CTA score).
+  Document: docs/pipeline-architecture.txt · Code: agents/
+
+campaign-lifecycle.mmd
+  The whole life of one campaign as a state machine: uploaded, analyzed,
+  segmented, drafted, checked, scored, reported — then either exported or
+  sent back through refinement.
+  Document: docs/pipeline-architecture.txt · Code: app.py
+
+--------------------------------------------------------------------
+ WHOLE SYSTEM  (how all the parts fit together)
+--------------------------------------------------------------------
+
+system-c4-container.mmd
+  A C4-style container view: the marketer, the Flask app and everything
+  inside it (web UI, orchestrator, the seven agents, the RAG layer,
+  ChromaDB, telemetry), and the two external services it calls
+  (OpenRouter for vision, local Ollama for text and embeddings).
+  Document: docs/pipeline-architecture.txt · Code: app.py, agents/
+
+--------------------------------------------------------------------
+ REFINEMENT  (how the user iterates without a full re-run)
+--------------------------------------------------------------------
+
+refinement-routing.mmd
+  A sequence diagram of one refine: a slider move or chat request goes to
+  the ReAct router, which picks the smallest set of agents to re-run
+  (guardrails always following copywriter), and only the affected report
+  sections are patched.
+  Document: docs/refinement-loop.txt · Code: agents/assistant.py, app.py
+
+--------------------------------------------------------------------
+ WIREFRAME  (the result-page UI)
+--------------------------------------------------------------------
+
+wireframe-result-page.png
+  The two-column result page: the campaign report on the left, the sticky
+  refinement panel (sliders above chat, visible routing label, proactive
+  suggestion) on the right. Authored in wiremd, rendered by
+  build_wireframes.py.
+  Document: docs/wireframes.md · Source: wireframes/result-page.wmd.md

@@ -1,0 +1,25 @@
+---
+title: TO-BE — The same five functions as one agent pipeline
+---
+flowchart TB
+    classDef user fill:#1b263b,stroke:#0d1b2a,color:#ffffff;
+    classDef agent fill:#3a6ea5,stroke:#0f3460,color:#ffffff;
+    classDef local fill:#e0e1dd,stroke:#778da9,color:#0d1b2a;
+    classDef human fill:#f4d35e,stroke:#c9a227,color:#3a2f00;
+
+    U(["User uploads a product image<br/>+ a short description + a tone"]):::user
+
+    subgraph PIPE["One automated pass — about a minute"]
+        direction TB
+        V["vision + color<br/>read the product<br/>(product analysis)"]:::agent
+        AU["audience<br/>build the persona<br/>(audience definition)"]:::agent
+        CW["copywriter<br/>write two variants<br/>(copy + creative)"]:::agent
+        GR["guardrails<br/>check the claims<br/>(legal review)"]:::local
+        CT["cta_optimizer<br/>score the calls to action<br/>(conversion)"]:::agent
+        V --> AU --> CW --> GR --> CT
+    end
+
+    U --> V
+    CT --> R(["Campaign report:<br/>persona, two variants,<br/>flags, CTA scores"]):::user
+    R --> H{{"Person reviews and<br/>refines — the only<br/>human step left"}}:::human
+    H -. "tweak tone / audience<br/>via the refinement panel" .-> PIPE

@@ -1,0 +1,28 @@
+---
+title: Pipeline dataflow — what each agent receives and returns
+---
+flowchart TB
+    classDef local fill:#e0e1dd,stroke:#778da9,color:#0d1b2a;
+    classDef remote fill:#9d4edd,stroke:#5a189a,color:#ffffff;
+    classDef ollama fill:#3a6ea5,stroke:#0f3460,color:#ffffff;
+    classDef data fill:#fcfcfc,stroke:#adb5bd,color:#0d1b2a;
+
+    VI["vision.analyze (OpenRouter)"]:::remote
+    VID["product_type · product_tags<br/>target_signals · mood<br/>suggested_hashtags · model_used"]:::data
+    CO["color.extract (local)"]:::local
+    COD["dominant · palette[5]"]:::data
+    AU["audience.segment (mistral)"]:::ollama
+    AUD["persona_label · age_range<br/>interests · platform_behavior"]:::data
+    CW["copywriter.generate (gemma4)"]:::ollama
+    CWD["variant_1 · variant_2<br/>(each &le;150 chars + CTA)"]:::data
+    GR["guardrails.check (regex)"]:::local
+    GRD["clean_copy · flags<br/>[variant · matched · reason]"]:::data
+    CT["cta_optimizer.optimize (mistral)"]:::ollama
+    CTD["per variant: original_cta<br/>score 1-10 · suggestion · reasoning"]:::data
+
+    VI --> VID --> AU
+    CO --> COD --> CW
+    AU --> AUD --> CW
+    CW --> CWD --> GR
+    GR --> GRD --> CT
+    CT --> CTD

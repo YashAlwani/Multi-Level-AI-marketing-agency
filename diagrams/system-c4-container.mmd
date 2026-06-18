@@ -1,0 +1,29 @@
+---
+title: System container view (C4-style)
+---
+flowchart TB
+    classDef person fill:#08306b,stroke:#041f4a,color:#ffffff;
+    classDef container fill:#3a6ea5,stroke:#0f3460,color:#ffffff;
+    classDef store fill:#1b9e77,stroke:#0f6b50,color:#ffffff;
+    classDef external fill:#6c757d,stroke:#343a40,color:#ffffff;
+
+    USER(["Marketer<br/>uploads a product, reviews,<br/>and refines the campaign"]):::person
+
+    subgraph SYS["Marketing Agent (Flask app — app.py)"]
+        direction TB
+        WEB["Web UI<br/>index · result · docs<br/>(templates/, SSE)"]:::container
+        ORCH["Pipeline orchestrator<br/>/generate · /refine · /suggest<br/>(app.py)"]:::container
+        AGENTS["Seven agents<br/>vision · color · audience · copywriter<br/>guardrails · cta_optimizer · assistant<br/>(agents/)"]:::container
+        RAGC["RAG layer<br/>ingest + retrieve<br/>(agents/rag.py)"]:::container
+        CHROMA[("ChromaDB<br/>chroma_store/")]:::store
+        TEL[("Telemetry<br/>run_log.jsonl")]:::store
+    end
+
+    OPENR["OpenRouter<br/>vision models (free tier)"]:::external
+    OLLAMA["Ollama (local)<br/>gemma4 · mistral · nomic-embed"]:::external
+
+    USER --> WEB --> ORCH --> AGENTS
+    AGENTS --> RAGC --> CHROMA
+    ORCH --> TEL
+    AGENTS -. "image analysis" .-> OPENR
+    AGENTS -. "copy · persona · CTA · embeddings" .-> OLLAMA

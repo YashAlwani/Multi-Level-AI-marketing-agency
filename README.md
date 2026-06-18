@@ -126,9 +126,28 @@ templates/
   index.html            Upload form + knowledge base upload
   result.html           Campaign report + assistant refinement panel
   docs.html             Knowledge base document viewer
-ARCHITECTURE.md         Full pipeline diagram
-DECISIONS.md            Decision log — tool choices and rationale
+docs/                   Plain-English design documents (see below)
+diagrams/               Mermaid sources + rendered PNGs (00-INDEX.txt explains each)
+decision_logs/          The eight decision logs, DL-SUMMARY.txt, EVIDENCE-MANIFEST.md
+ARCHITECTURE.md         ASCII pipeline diagram (technical source)
 ```
+
+---
+
+## Documentation
+
+The design is explained in plain language, without reading code, in four
+design documents under `docs/`:
+
+- `gap-analysis.txt` — before vs after: how a human agency makes a campaign,
+  and how the agent pipeline changes it
+- `pipeline-architecture.txt` — how one campaign runs across the seven agents
+- `refinement-loop.txt` — how a user refines output without a full re-run
+- `wireframes.md` — the result-page UI decisions and rationale
+
+Each decision log in `decision_logs/` points at the relevant design document
+and diagram. `decision_logs/DL-SUMMARY.txt` tells the whole build as a
+five-sprint story, and `diagrams/00-INDEX.txt` describes every diagram.
 
 ---
 

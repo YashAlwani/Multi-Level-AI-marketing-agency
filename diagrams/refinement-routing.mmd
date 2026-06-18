@@ -1,0 +1,19 @@
+---
+title: Refinement routing — which agents re-run after a tweak
+---
+sequenceDiagram
+    autonumber
+    actor U as Marketer
+    participant P as Refinement panel
+    participant R as ReAct router
+    participant Pipe as Agent subset
+    participant S as Output state
+
+    U->>P: move a slider or type a request
+    P->>R: POST /refine with the full output_state (stateless)
+    Note over R: read slider changes and message, apply routing rules
+    R-->>P: agents_to_run + routing_label + reasoning
+    Note over R,Pipe: order is enforced, guardrails always follows copywriter
+    P->>Pipe: re-run only the chosen agents
+    Pipe-->>S: merge updated fields back into state
+    S-->>U: patch only the affected report sections and show the routing label

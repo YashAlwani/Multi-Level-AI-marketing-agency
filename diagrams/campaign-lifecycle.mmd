@@ -1,0 +1,24 @@
+---
+title: Campaign lifecycle — one run as a state machine
+---
+stateDiagram-v2
+    direction TB
+    [*] --> Uploaded: image + description + tone
+    Uploaded --> Analyzed: vision + color read the product
+    Analyzed --> Segmented: audience builds the persona
+    Segmented --> Drafted: copywriter writes two variants
+    Drafted --> Checked: guardrails scans the claims
+    Checked --> Scored: cta_optimizer rates each call to action
+    Scored --> Reported: stored in _run_store, logged to run_log.jsonl
+    Reported --> Refining: user moves a slider or sends a request
+    Refining --> Checked: re-run the chosen agents (order enforced)
+    Reported --> [*]: export campaign JSON
+
+    note right of Checked
+        guardrails always
+        follows copywriter
+    end note
+    note right of Reported
+        any step that errors still
+        reaches a recorded result
+    end note
