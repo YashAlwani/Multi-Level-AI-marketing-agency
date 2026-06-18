@@ -4,23 +4,14 @@ Marketing Agent POC
 
 0. Context
 
-Vision is the first agent, and everything downstream depends on what it
-returns. The pipeline design had flagged the risk before the first run: a
-vision model must be vision-capable (the ":vl" tag), or it returns a 400
-error — verify before picking a name¹. I did not verify. The first run
-failed exactly that way, and fixing it taught me that the output schema
-mattered far more than which model ran.
+Vision is the first agent, and everything downstream depends on what it returns. The pipeline design had flagged the risk before the first run: a vision model must be vision-capable (the ":vl" tag), or it returns a 400 error — verify before picking a name¹. I did not verify. The first run failed exactly that way, and fixing it taught me that the output schema mattered far more than which model ran.
 
-Vision is the product-analysis function from the AS-IS agency, now the
-front of the pipeline (@gap-analysis). Its target_signals field becomes the
-primary context the audience agent builds on (@agent-contracts), which is
-what makes the persona jump in DL-02 possible.
+Vision is the product-analysis function from the AS-IS agency, now the front of the pipeline (@gap-analysis). Its target_signals field becomes the primary context the audience agent builds on (@agent-contracts), which is what makes the persona jump in DL-02 possible.
 
 
 1. Research question
 
-Which vision model works reliably on the OpenRouter free tier, and what
-output schema makes audience segmentation as effective as possible?
+Which vision model works reliably on the OpenRouter free tier, and what output schema makes audience segmentation as effective as possible?
 
 
 2. Current LO stage
@@ -43,33 +34,21 @@ output schema makes audience segmentation as effective as possible?
 4. What I decided
 
 A two-model fallback chain: nemotron-nano-12b-v2-vl:free primary,
-llama-3.2-11b-vision-instruct:free fallback. Redesign the output schema from
-visual attributes to buyer signals — target_signals is the key field, not
-colours or materials.
+llama-3.2-11b-vision-instruct:free fallback. Redesign the output schema from visual attributes to buyer signals — target_signals is the key field, not colours or materials.
 
 
 5. Why this decision
 
 Method: Lab.
 
-The first model choice was a "-it" (instruction-tuned) model and returned
-an immediate 400: "model does not support vision." The pipeline design had
-written that exact warning¹. Switching to the ":vl" (vision-language) model
-worked on the first try.
+The first model choice was a "-it" (instruction-tuned) model and returned an immediate 400: "model does not support vision." The pipeline design had written that exact warning¹. Switching to the ":vl" (vision-language) model worked on the first try.
 
-The schema redesign came from reading what the audience agent actually
-takes: it receives the full vision output (product_type, product_tags,
-mood, target_signals), not an image and not raw descriptions
-(@agent-contracts). The initial schema returned the wrong things:
+The schema redesign came from reading what the audience agent actually takes: it receives the full vision output (product_type, product_tags, mood, target_signals), not an image and not raw descriptions (@agent-contracts). The initial schema returned the wrong things:
 
   Before: visual_style, colors, materials, overall_impression
   After:  product_type, product_tags, mood, target_signals, suggested_hashtags
 
-The audience agent had been receiving "matte green finish, stainless steel"
-and trying to infer a buyer from material words. target_signals —
-"eco-conscious", "fitness enthusiast", "outdoor lifestyle" — hands it the
-product already in buyer-identity language. Before and after on the same
-bottle:
+The audience agent had been receiving "matte green finish, stainless steel" and trying to infer a buyer from material words. target_signals — "eco-conscious", "fitness enthusiast", "outdoor lifestyle" — hands it the product already in buyer-identity language. Before and after on the same bottle:
 
   Audience before redesign: "Health and Wellness Consumer, 20-45"
   Audience after redesign:  "Eco-Conscious Millennial Athlete, 25-34"
@@ -78,25 +57,13 @@ Same model downstream. Different input quality.
 
 [IMAGE: diagrams/pipeline-dataflow.png — vision's target_signals flowing into the audience agent as its primary context]
 
-The fallback chain was added after confirming free-tier models go offline
-without notice — a risk the pipeline design named: a single-model vision
-stage blocks the whole pipeline, so vision needs a fallback¹. In 10 test
-runs, 2 fell back to llama; both finished cleanly. If both fail, vision
-returns a safe dict with empty tags so downstream agents run rather than
-crash, though the output will be generic. That degradation is logged but
-not yet surfaced in the UI.
+The fallback chain was added after confirming free-tier models go offline without notice — a risk the pipeline design named: a single-model vision stage blocks the whole pipeline, so vision needs a fallback¹. In 10 test runs, 2 fell back to llama; both finished cleanly. If both fail, vision returns a safe dict with empty tags so downstream agents run rather than crash, though the output will be generic. That degradation is logged but not yet surfaced in the UI.
 
 What I'd recommend:
-Check the modality tag before picking any model for a vision task — names
-do not imply modality. Then test the output schema against the downstream
-agent's real needs before calling the design done. The schema decision had
-more impact than the model choice.
+Check the modality tag before picking any model for a vision task — names do not imply modality. Then test the output schema against the downstream agent's real needs before calling the design done. The schema decision had more impact than the model choice.
 
 GAP found:
-If both free-tier vision models go offline at once, the pipeline degrades
-silently. A UI warning when the fallback fires would tell the user why the
-output came back generic. The spec does not cover this — it is an
-operational gap that emerged in practice.
+If both free-tier vision models go offline at once, the pipeline degrades silently. A UI warning when the fallback fires would tell the user why the output came back generic. The spec does not cover this — it is an operational gap that emerged in practice.
 
 
 6. Does this hold up
@@ -106,13 +73,10 @@ operational gap that emerged in practice.
 - Buyer signals in output: pass — target_signals is the field the audience agent uses first
 
 Assumptions I'm making:
-The OpenRouter free tier stays available during a demo. 2 of 10 runs fell
-back; both completed. The fallback chain works as designed.
+The OpenRouter free tier stays available during a demo. 2 of 10 runs fell back; both completed. The fallback chain works as designed.
 
 What surprised me:
-The schema redesign mattered more than the model choice. nemotron versus
-llama made little difference; buyer signals versus visual attributes made a
-large one.
+The schema redesign mattered more than the model choice. nemotron versus llama made little difference; buyer signals versus visual attributes made a large one.
 
 
 7. What this unlocks
@@ -121,18 +85,13 @@ Next LO stage: Realizing (audience and copy can now be validated against
 real vision output).
 
 What I can now do:
-Run the pipeline end to end and trace quality issues to specific agents.
-The model_used field identifies which model served each run
-(@agent-contracts).
+Run the pipeline end to end and trace quality issues to specific agents. The model_used field identifies which model served each run (@agent-contracts).
 
 Ongoing monitoring:
-run_log.jsonl records model_used per run. If fallback frequency rises above
-30%, nemotron may be rate-limited — check OpenRouter status.
+run_log.jsonl records model_used per run. If fallback frequency rises above 30%, nemotron may be rate-limited — check OpenRouter status.
 
 How I'll know this worked:
-target_signals is never empty on a product-specific image. persona_label is
-specific ("Eco-Conscious Millennial") rather than generic ("health
-consumer") (@requirements-scope).
+target_signals is never empty on a product-specific image. persona_label is specific ("Eco-Conscious Millennial") rather than generic ("health consumer") (@requirements-scope).
 
 
 ¹ The vision-modality and fallback rules are set out in the pipeline

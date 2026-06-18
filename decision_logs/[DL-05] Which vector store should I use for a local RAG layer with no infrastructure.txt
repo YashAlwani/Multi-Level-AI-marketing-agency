@@ -4,23 +4,14 @@ Marketing Agent POC
 
 0. Context
 
-Campaigns came back generic whenever the product had brand guidelines or
-technical specs that were not visible in the image. A bottle with a
-double-wall vacuum spec sheet and no visible text got copy that just said
-"insulated." The spec sheet existed; the pipeline had no way to read it. The
-constraints had set the rule before this came up: pip install only, no
-external services beyond Ollama and an OpenRouter account (@constraints).
+Campaigns came back generic whenever the product had brand guidelines or technical specs that were not visible in the image. A bottle with a double-wall vacuum spec sheet and no visible text got copy that just said "insulated." The spec sheet existed; the pipeline had no way to read it. The constraints had set the rule before this came up: pip install only, no external services beyond Ollama and an OpenRouter account (@constraints).
 
-This extends the product-analysis function from the gap analysis: vision
-reads the picture, RAG reads the documents the picture cannot show
-(@gap-analysis). Retrieval here is also what the refinement loop builds on —
-brand documents are uploaded once and reused across every refine (DL-06).
+This extends the product-analysis function from the gap analysis: vision reads the picture, RAG reads the documents the picture cannot show (@gap-analysis). Retrieval here is also what the refinement loop builds on — brand documents are uploaded once and reused across every refine (DL-06).
 
 
 1. Research question
 
-Which vector store and embedding model run locally, fit the existing Ollama
-setup, and actually produce more specific copy?
+Which vector store and embedding model run locally, fit the existing Ollama setup, and actually produce more specific copy?
 
 
 2. Current LO stage
@@ -42,9 +33,7 @@ setup, and actually produce more specific copy?
 
 4. What I decided
 
-ChromaDB for the vector store — local file persistence, pip install,
-built-in deduplication by content hash. nomic-embed-text via Ollama for
-embeddings. Text only: RAG handles documents, vision stays separate.
+ChromaDB for the vector store — local file persistence, pip install, built-in deduplication by content hash. nomic-embed-text via Ollama for embeddings. Text only: RAG handles documents, vision stays separate.
 
 
 5. Why this decision
@@ -60,19 +49,9 @@ Four options against the constraints:
   Weaviate        | no    | no (Docker) | yes          | yes           | rejected
   Pinecone        | no    | yes         | yes          | yes           | rejected
 
-FAISS is fast but needs manual serialize/load on every restart — state
-management I would have to build. Weaviate and cloud options need Docker or
-API keys, which breaks the no-external-services rule (@constraints).
-ChromaDB persists to a local chroma_store/ directory and deduplicates by
-content hash, both of which FAISS would need custom defensive code for. The
-ingest function returns {"ingested": int, "skipped": int} — the skipped
-count is the dedup indicator: re-uploading a file returns skipped: N,
-ingested: 0 (@agent-contracts).
+FAISS is fast but needs manual serialize/load on every restart — state management I would have to build. Weaviate and cloud options need Docker or API keys, which breaks the no-external-services rule (@constraints). ChromaDB persists to a local chroma_store/ directory and deduplicates by content hash, both of which FAISS would need custom defensive code for. The ingest function returns {"ingested": int, "skipped": int} — the skipped count is the dedup indicator: re-uploading a file returns skipped: N, ingested: 0 (@agent-contracts).
 
-For embeddings I compared mxbai-embed-large at about 3 seconds a chunk
-against nomic-embed-text at about 0.8. Retrieval quality on product text
-was similar; both pip install the same way. Ingest speed matters during a
-live demo, so nomic wins.
+For embeddings I compared mxbai-embed-large at about 3 seconds a chunk against nomic-embed-text at about 0.8. Retrieval quality on product text was similar; both pip install the same way. Ingest speed matters during a live demo, so nomic wins.
 
 The A/B on copy output with the same product manual uploaded:
 
@@ -80,29 +59,17 @@ The A/B on copy output with the same product manual uploaded:
   With RAG:    "Insulated with aerospace-grade double-wall vacuum technology.
                 BPA-free Tritan lid. 48h cold retention. Shop the spec sheet."
 
-The specific claims came from the document. The copywriter prompt forbids
-inventing features not in the image or description; RAG is the mechanism
-that gives it grounded claims instead of invented ones (@requirements-scope).
+The specific claims came from the document. The copywriter prompt forbids inventing features not in the image or description; RAG is the mechanism that gives it grounded claims instead of invented ones (@requirements-scope).
 
 [IMAGE: diagrams/pipeline-overview.png — RAG retrieval feeding doc_context into the audience, copywriter, and CTA agents]
 
-Retrieval connects at every text stage: audience, copywriter, and
-cta_optimizer all accept doc_context as an optional parameter, so brand
-context reaches every step that benefits, not just copy (@agent-contracts).
-Chunk size mattered more than the embedding model. At 400 characters with
-80-character overlap, retrieval pulls coherent sentences; smaller chunks
-returned mid-sentence fragments.
+Retrieval connects at every text stage: audience, copywriter, and cta_optimizer all accept doc_context as an optional parameter, so brand context reaches every step that benefits, not just copy (@agent-contracts). Chunk size mattered more than the embedding model. At 400 characters with 80-character overlap, retrieval pulls coherent sentences; smaller chunks returned mid-sentence fragments.
 
 What I'd recommend:
-ChromaDB is genuinely easy for a POC. The content-hash deduplication alone
-saves defensive code. The text-only choice was deliberate — do not mix
-modalities in the vector space without a specific reason.
+ChromaDB is genuinely easy for a POC. The content-hash deduplication alone saves defensive code. The text-only choice was deliberate — do not mix modalities in the vector space without a specific reason.
 
 GAP found:
-rag_chunks_used is logged per run, but there is no aggregate comparison of
-RAG-on vs RAG-off CTA scores across runs. The per-run improvement is clear;
-the aggregate evidence is not collected yet (@research-questions). DL-08
-sets up the telemetry that would make that comparison possible.
+rag_chunks_used is logged per run, but there is no aggregate comparison of RAG-on vs RAG-off CTA scores across runs. The per-run improvement is clear; the aggregate evidence is not collected yet (@research-questions). DL-08 sets up the telemetry that would make that comparison possible.
 
 
 6. Does this hold up
@@ -113,13 +80,10 @@ sets up the telemetry that would make that comparison possible.
 - Copy improves with RAG: pass — confirmed on 3 product-manual tests
 
 Assumptions I'm making:
-Uploaded documents are product-relevant. An unrelated PDF would inject
-noise — there is no relevance filter before injection.
+Uploaded documents are product-relevant. An unrelated PDF would inject noise — there is no relevance filter before injection.
 
 What surprised me:
-Chunk size had more effect on quality than the embedding model. 400
-characters with 80 overlap was the point where retrieved content read as
-coherent sentences.
+Chunk size had more effect on quality than the embedding model. 400 characters with 80 overlap was the point where retrieved content read as coherent sentences.
 
 
 7. What this unlocks
@@ -128,16 +92,13 @@ Next LO stage: Realizing → Realizing (the pipeline now handles image-only
 and image-plus-document inputs).
 
 What I can now do:
-Let users upload briefs, specs, or manuals before generating. doc_context
-slots in automatically across audience, copywriter, and CTA.
+Let users upload briefs, specs, or manuals before generating. doc_context slots in automatically across audience, copywriter, and CTA.
 
 Ongoing monitoring:
-Watch rag_chunks_used in run_log.jsonl. If it is always 0, users are not
-uploading documents — worth a prompt in the UI.
+Watch rag_chunks_used in run_log.jsonl. If it is always 0, users are not uploading documents — worth a prompt in the UI.
 
 How I'll know this worked:
-Product-specific technical claims appear in copy only when a spec document
-is uploaded. Clean runs without documents produce no invented specs.
+Product-specific technical claims appear in copy only when a spec document is uploaded. Clean runs without documents produce no invented specs.
 
 
 ¹ The retrieval layer and where it injects are described in the pipeline

@@ -4,23 +4,14 @@ Marketing Agent POC
 
 0. Context
 
-The pipeline ran reliably after the model split, but there was no way to
-answer "is it improving?" The constraints set the educational frame: every
-significant choice documented with a research question, evidence, and what
-it unlocks, with evidence across all five LO stages (@constraints). Managing
-is the fifth stage, and the telemetry layer is the evidence that it
-happened.
+The pipeline ran reliably after the model split, but there was no way to answer "is it improving?" The constraints set the educational frame: every significant choice documented with a research question, evidence, and what it unlocks, with evidence across all five LO stages (@constraints). Managing is the fifth stage, and the telemetry layer is the evidence that it happened.
 
-Every earlier log added capability; this one makes the cumulative capability
-measurable — and lets the TO-BE claims be checked with data: that the pass
-runs in about a minute, and that the human-review limits the project
-documents are real (@gap-analysis · @gap-to-be).
+Every earlier log added capability; this one makes the cumulative capability measurable — and lets the TO-BE claims be checked with data: that the pass runs in about a minute, and that the human-review limits the project documents are real (@gap-analysis · @gap-to-be).
 
 
 1. Research question
 
-What per-run data is worth capturing to detect quality trends — without
-logging user content or adding pipeline latency?
+What per-run data is worth capturing to detect quality trends — without logging user content or adding pipeline latency?
 
 
 2. Current LO stage
@@ -41,24 +32,14 @@ logging user content or adding pipeline latency?
 
 4. What I decided
 
-Append-only JSONL (run_log.jsonl). One line per run: timestamp, run_id,
-vision model_used, pipeline_s, compliance_flags count, cta_score_avg,
-rag_chunks_used, persona_label. /stats reads it and returns aggregates.
+Append-only JSONL (run_log.jsonl). One line per run: timestamp, run_id, vision model_used, pipeline_s, compliance_flags count, cta_score_avg, rag_chunks_used, persona_label. /stats reads it and returns aggregates.
 
 
 5. Why this decision
 
 Method: Lab.
 
-JSONL over a database at this scale — tens to hundreds of runs — means no
-ORM, no migrations, no schema management; it is greppable, tailable, and
-importable into any tool without a driver. Content was excluded by design:
-the primary stakeholder's concern is "will it hallucinate specs I didn't
-provide?", and a log holding copy text alongside metrics is a document
-anyone with file access could read. Metrics only (@stakeholder-analysis).
-persona_label is the one categorical field — over time it groups runs, so
-patterns like "this persona type scores higher" or "this category flags more
-often" become visible where single runs hide them.
+JSONL over a database at this scale — tens to hundreds of runs — means no ORM, no migrations, no schema management; it is greppable, tailable, and importable into any tool without a driver. Content was excluded by design: the primary stakeholder's concern is "will it hallucinate specs I didn't provide?", and a log holding copy text alongside metrics is a document anyone with file access could read. Metrics only (@stakeholder-analysis). persona_label is the one categorical field — over time it groups runs, so patterns like "this persona type scores higher" or "this category flags more often" become visible where single runs hide them.
 
 [IMAGE: diagrams/campaign-lifecycle.png — every run, even one that errors, ends in a recorded, logged state]
 
@@ -77,14 +58,10 @@ The first batch confirmed three things earlier logs predicted:
     chunks (@[DL-07]).
 
 What I'd recommend:
-Log metrics, not content. The privacy boundary matters even in a POC — if
-this becomes a portfolio piece, plain-text product copy in the repo is a
-problem before it is ever published.
+Log metrics, not content. The privacy boundary matters even in a POC — if this becomes a portfolio piece, plain-text product copy in the repo is a problem before it is ever published.
 
 GAP found:
-rag_chunks_used is logged, but the aggregate comparison of RAG-on vs RAG-off
-CTA scores is not computed yet. rag_chunks_used is the covariate that would
-let the RAG quality claim from DL-05 be validated at scale (@research-questions).
+rag_chunks_used is logged, but the aggregate comparison of RAG-on vs RAG-off CTA scores is not computed yet. rag_chunks_used is the covariate that would let the RAG quality claim from DL-05 be validated at scale (@research-questions).
 
 
 6. Does this hold up
@@ -94,13 +71,10 @@ let the RAG quality claim from DL-05 be validated at scale (@research-questions)
 - /stats readable:   pass — returns runs, avg_pipeline_s, avg_cta_score, compliance_rate
 
 Assumptions I'm making:
-run_log.jsonl needs no rotation at this volume. A few runs a day keeps the
-file small indefinitely.
+run_log.jsonl needs no rotation at this volume. A few runs a day keeps the file small indefinitely.
 
 What surprised me:
-The telemetry turned the decision logs into a feedback loop. Three earlier
-logs made predictions; the first batch of runs confirmed all three. Writing
-the logs as predictions, not just records, made them testable.
+The telemetry turned the decision logs into a feedback loop. Three earlier logs made predictions; the first batch of runs confirmed all three. Writing the logs as predictions, not just records, made them testable.
 
 
 7. What this unlocks
@@ -108,20 +82,13 @@ the logs as predictions, not just records, made them testable.
 Next LO stage: Managing → ongoing.
 
 What I can now do:
-Answer "is the pipeline improving?" with data. Any change to prompts,
-models, or RAG parameters has a measurable effect on pipeline_s,
-cta_score_avg, and compliance_rate.
+Answer "is the pipeline improving?" with data. Any change to prompts, models, or RAG parameters has a measurable effect on pipeline_s, cta_score_avg, and compliance_rate.
 
 Ongoing monitoring:
-/stats gives the current aggregate at any point. Watch cta_score_avg — a
-drop after a model change means the new model is worse for copy. Watch
-compliance_rate — if it stays above 40%, the copywriter prompt needs the
-urgency instruction DL-04 flagged.
+/stats gives the current aggregate at any point. Watch cta_score_avg — a drop after a model change means the new model is worse for copy. Watch compliance_rate — if it stays above 40%, the copywriter prompt needs the urgency instruction DL-04 flagged.
 
 How I'll know this worked:
-After adjusting the copywriter prompt to avoid urgency, compliance_rate in
-/stats drops below 20% — the first actionable finding the telemetry is built
-to surface.
+After adjusting the copywriter prompt to avoid urgency, compliance_rate in /stats drops below 20% — the first actionable finding the telemetry is built to surface.
 
 
 ¹ The lifecycle that always reaches a recorded state is described in the

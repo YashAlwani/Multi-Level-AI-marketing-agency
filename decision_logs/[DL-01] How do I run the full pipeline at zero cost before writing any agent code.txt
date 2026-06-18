@@ -4,26 +4,14 @@ Marketing Agent POC
 
 0. Context
 
-Before writing code I needed two things locked at once: what the pipeline
-has to do, and what it costs to run. I kept sketching agent designs without
-knowing whether the models behind them could run on a developer laptop —
-8GB RAM, no dedicated GPU, no API budget (@constraints). Scope and model
-stack had to be decided together. Committing to five agents and then
-finding the vision model needed 16GB of VRAM would have meant rebuilding
-from the first stage down.
+Before writing code I needed two things locked at once: what the pipeline has to do, and what it costs to run. I kept sketching agent designs without knowing whether the models behind them could run on a developer laptop — 8GB RAM, no dedicated GPU, no API budget (@constraints). Scope and model stack had to be decided together. Committing to five agents and then finding the vision model needed 16GB of VRAM would have meant rebuilding from the first stage down.
 
-This is the foundation the rest of the gap rests on. The five agents chosen
-here are the five functions a human agency performs in the AS-IS picture —
-product analysis, audience, copy, compliance, conversion (@gap-analysis ·
-@gap-as-is). The cloud-or-local split decided here is the assumption every
-later log builds on, and the single-model gap it leaves open is what DL-07
-fixes.
+This is the foundation the rest of the gap rests on. The five agents chosen here are the five functions a human agency performs in the AS-IS picture — product analysis, audience, copy, compliance, conversion (@gap-analysis · @gap-as-is). The cloud-or-local split decided here is the assumption every later log builds on, and the single-model gap it leaves open is what DL-07 fixes.
 
 
 1. Research question
 
-What is the smallest pipeline that still counts as a "campaign", and what
-model stack runs it for free on a developer laptop?
+What is the smallest pipeline that still counts as a "campaign", and what model stack runs it for free on a developer laptop?
 
 
 2. Current LO stage
@@ -47,8 +35,7 @@ model stack runs it for free on a developer laptop?
 4. What I decided
 
 Build five agents now: vision, audience, copywriter, guardrails,
-cta_optimizer. Defer theme selection, the landing page, and evaluation
-scoring.
+cta_optimizer. Defer theme selection, the landing page, and evaluation scoring.
 
 Model split: OpenRouter free tier for vision only; Ollama for all text
 generation. mistral:7b runs at about 20 tokens a second on CPU, at no cost.
@@ -58,43 +45,19 @@ generation. mistral:7b runs at about 20 tokens a second on CPU, at no cost.
 
 Method: Library and Lab.
 
-The five-function baseline comes straight from the gap analysis: even the
-smallest agency performs five distinct functions — product and market
-analysis, audience definition, copy and creative, conversion, and
-compliance review — because each needs genuinely different context and
-judgement, not because of an org chart¹. A creative director makes weak
-media calls; a media buyer writes weak copy. That is the argument for five
-specialists over one generalist (@gap-analysis).
+The five-function baseline comes straight from the gap analysis: even the smallest agency performs five distinct functions — product and market analysis, audience definition, copy and creative, conversion, and compliance review — because each needs genuinely different context and judgement, not because of an org chart¹. A creative director makes weak media calls; a media buyer writes weak copy. That is the argument for five specialists over one generalist (@gap-analysis).
 
-The requirements work translated those functions into a numbered spec, with
-a reason recorded for every item left out. Theme selection added complexity
-without clear value over a tone slider. The landing page was useful but not
-needed to prove the multi-agent idea. Evaluation scoring needed a reference
-lexicon that did not exist yet. None of the three sat on the path from
-product image to finished variants — that was the test for deferring
-(@requirements-scope). Compliance was the harder call: I first read it as a
-quality add-on, but the brief marks it as a policy-safety requirement, so
-guardrails goes in the base set.
+The requirements work translated those functions into a numbered spec, with a reason recorded for every item left out. Theme selection added complexity without clear value over a tone slider. The landing page was useful but not needed to prove the multi-agent idea. Evaluation scoring needed a reference lexicon that did not exist yet. None of the three sat on the path from product image to finished variants — that was the test for deferring (@requirements-scope). Compliance was the harder call: I first read it as a quality add-on, but the brief marks it as a policy-safety requirement, so guardrails goes in the base set.
 
-For the stack, the constraints had already ruled options out: local vision
-models need 8–16GB of VRAM and crawl at under three tokens a second on CPU
-(@constraints). All-local was eliminated on hardware before I tested it.
-All-cloud ran up token costs too fast for the test volume the project
-needs. The split was the only configuration left, and it landed total
-pipeline time at 60–90 seconds with no billing set up (@config).
+For the stack, the constraints had already ruled options out: local vision models need 8–16GB of VRAM and crawl at under three tokens a second on CPU (@constraints). All-local was eliminated on hardware before I tested it. All-cloud ran up token costs too fast for the test volume the project needs. The split was the only configuration left, and it landed total pipeline time at 60–90 seconds with no billing set up (@config).
 
 [IMAGE: diagrams/system-c4-container.png — the stack: a local Flask app calling OpenRouter for vision and a local Ollama for all text and embeddings]
 
 What I'd recommend:
-Lock scope and stack together before the first agent. Changing the model
-mid-build means rewriting every timeout assumption and every prompt format
-calibrated against the old model.
+Lock scope and stack together before the first agent. Changing the model mid-build means rewriting every timeout assumption and every prompt format calibrated against the old model.
 
 GAP found:
-mistral:7b is one model doing every text task — creative copy, audience
-inference, and structured JSON. Whether one local model can do both
-creative and structured work well is unanswered (@research-questions).
-DL-07 answers it after a timeout forces the comparison.
+mistral:7b is one model doing every text task — creative copy, audience inference, and structured JSON. Whether one local model can do both creative and structured work well is unanswered (@research-questions). DL-07 answers it after a timeout forces the comparison.
 
 
 6. Does this hold up
@@ -104,13 +67,10 @@ DL-07 answers it after a timeout forces the comparison.
 - Deferred items isolated: pass — all three confirmed off the critical path
 
 Assumptions I'm making:
-OpenRouter free-tier rate limits are fine for this project's test volume.
-Sustained production throughput would need a paid account.
+OpenRouter free-tier rate limits are fine for this project's test volume. Sustained production throughput would need a paid account.
 
 What surprised me:
-Compliance made it into the required set against my first instinct. Reading
-the brief's "no fabricated prices or unverifiable claims" rule made the
-legal framing unavoidable.
+Compliance made it into the required set against my first instinct. Reading the brief's "no fabricated prices or unverifiable claims" rule made the legal framing unavoidable.
 
 
 7. What this unlocks
@@ -118,17 +78,13 @@ legal framing unavoidable.
 Next LO stage: Designing → Realizing.
 
 What I can now do:
-Build each of the five agents against a fixed target. Scope is stable —
-spec documented, three items deferred, five built.
+Build each of the five agents against a fixed target. Scope is stable — spec documented, three items deferred, five built.
 
 Ongoing monitoring:
-If a deferred feature is needed for a demo, that is a scope conversation,
-not a silent addition. The deferral reasons are written down
-(@requirements-scope).
+If a deferred feature is needed for a demo, that is a scope conversation, not a silent addition. The deferral reasons are written down (@requirements-scope).
 
 How I'll know this worked:
-The pipeline runs end to end on a product image with no API errors and no
-timeout, in under 120 seconds (@requirements-scope).
+The pipeline runs end to end on a product image with no API errors and no timeout, in under 120 seconds (@requirements-scope).
 
 
 ¹ The agency-function reasoning is set out in the gap analysis;
